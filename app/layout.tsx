@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "お断りくん | 角が立たない断り文作成ツール",
-  description: "あなたの代わりに、優しく「NO」を伝えます。",
+  title: "イイ感じ敬語くん",
+  description: "あなたの伝えたいことを、空気を読んだ言葉に変換します。",
 };
 
 export default function RootLayout({
