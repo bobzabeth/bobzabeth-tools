@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// 1. これを追加！
 import { GoogleAnalytics } from '@next/third-parties/google'
 
 const geistSans = Geist({
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "イイ感じ敬語くん",
-  description: "あなたの伝えたいことを、空気を読んだ言葉に変換します。",
+  title: "イイ感じ敬語くん | 伝えたいことを角が立たない言葉に変換",
+  description: "ざっくり入力するだけで、相手に合わせたいい感じの敬語に変換します。",
 };
 
 export default function RootLayout({
@@ -29,8 +28,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
-      {/* 2. bodyタグのすぐ下にこれを追加！ IDを自分のものに変えてね */}
-      <GoogleAnalytics gaId="G-B434K2D0XE" /> 
+      <GoogleAnalytics gaId="G-B434K2D0XE" />
     </html>
   );
 }
