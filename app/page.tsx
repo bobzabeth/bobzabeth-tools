@@ -17,34 +17,57 @@ export default function DeclinePage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // 1. handleSubmit の中身を以下に差し替え
   const handleSubmit = async () => {
-    if (!situation.trim()) return;
+  if (!situation.trim()) return;
 
-    setLoading(true);
-    setResult("");
-    setError("");
-    setCopied(false);
+  // --- 回数制限チェック開始 ---
+  const today = new Date().toLocaleDateString(); // "2024/03/21" のような形式
+  const localData = localStorage.getItem("decline_limit");
+  let usage = localData ? JSON.parse(localData) : { date: today, count: 0 };
 
-    try {
-      const selectedTone = TONES.find(t => t.id === tone)?.prompt;
+  // 日付が変わっていたらリセット
+  if (usage.date !== today) {
+    usage = { date: today, count: 0 };
+  }
 
-      const res = await fetch("/api/decline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          situation: `【状況】:${situation} \n【トーン】:${selectedTone} という条件で3つ案を出して。` 
-        }),
-      });
+  // 3回を超えていたらエラーを出して終了
+  if (usage.count >= 3) {
+    setError("本日の利用回数（3回）を超えました。また明日お越しください！");
+    return;
+  }
+  // --- 回数制限チェック終了 ---
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "エラーが発生しました");
-      setResult(data.result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "予期しないエラーです");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  setResult("");
+  setError("");
+
+  try {
+    const selectedTone = TONES.find(t => t.id === tone)?.prompt;
+    const res = await fetch("/api/decline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        situation: `【状況】:${situation} \n【トーン】:${selectedTone} という条件で3つ案を出して。` 
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "エラーが発生しました");
+    
+    setResult(data.result);
+
+    // --- 生成に成功したらカウントを増やす ---
+    usage.count += 1;
+    localStorage.setItem("decline_limit", JSON.stringify(usage));
+    // ------------------------------------
+
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "予期しないエラーです");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleShare = () => {
     const text = encodeURIComponent("角を立てずに断れる神ツールを見つけた！ #お断りツール #AI");
@@ -110,6 +133,11 @@ export default function DeclinePage() {
             </>
           ) : "優しい断り文を作る"}
         </button>
+
+        {/* ボタンの下あたりに追加 */}
+        <p className="text-[10px] text-center text-slate-400 mt-2">
+          ※無料版は1日3回まで利用可能です。
+        </p>
 
         {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
 
