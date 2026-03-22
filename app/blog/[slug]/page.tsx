@@ -5,7 +5,7 @@ import matter from "gray-matter";
 import { notFound } from "next/navigation";
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 function getPost(slug: string) {
@@ -33,7 +33,8 @@ function markdownToHtml(md: string): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = getPost(params.slug);
+  const { slug } = await params;
+  const post = getPost(slug);
   if (!post) return {};
   return {
     title: `${post.data.title} | ボブザベスの「これ便利じゃね？」`,
@@ -41,8 +42,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = getPost(params.slug);
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params;
+  const post = getPost(slug);
   if (!post) notFound();
 
   const html = markdownToHtml(post.content);
