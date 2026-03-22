@@ -115,23 +115,17 @@ export default function HomePage() {
         </section>
 
         {/* フッター */}
-        <footer className="mt-20 pt-8 border-t border-slate-100 space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-            <p>© 2026 ボブザベスの「これ便利じゃね？」</p>
-            <a
-              href="https://twitter.com/bobzabeth012"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 hover:text-slate-600 transition-colors font-medium"
-            >
-              <span className="font-bold">𝕏</span>
-              <span>@bobzabeth012</span>
-            </a>
-          </div>
-          <div className="flex items-center justify-center gap-6 text-xs text-slate-400">
-            <a href="/contact" className="hover:text-slate-600 transition-colors">お問い合わせ</a>
-            <a href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</a>
-          </div>
+        <footer className="mt-20 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <p>© 2026 ボブザベスの「これ便利じゃね？」</p>
+          <a
+            href="https://twitter.com/bobzabeth012"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 hover:text-slate-600 transition-colors font-medium"
+          >
+            <span className="font-bold">𝕏</span>
+            <span>@bobzabeth012</span>
+          </a>
         </footer>
 
       </div>
