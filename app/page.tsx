@@ -12,7 +12,7 @@ const TOOLS = [
     name: "イイ感じ敬語くん",
     desc: "伝えたいことをざっくり入力するだけで、相手に合わせたいい感じの言葉に変換してくれるよ。",
     tags: ["敬語", "コミュニケーション", "文章"],
-    url: "https://iikanjikeigo-kun.vercel.app/",
+    url: "https://bobzabeth-tools.vercel.app/keigo",
     color: "from-emerald-400 to-teal-500",
     bg: "bg-emerald-50",
     border: "border-emerald-100",
