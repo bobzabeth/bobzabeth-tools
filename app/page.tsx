@@ -129,6 +129,7 @@ export default function HomePage() {
             </a>
           </div>
           <div className="flex items-center justify-center gap-6 text-xs text-slate-400">
+            <a href="/blog" className="hover:text-slate-600 transition-colors">ブログ</a>
             <a href="/contact" className="hover:text-slate-600 transition-colors">お問い合わせ</a>
             <a href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</a>
           </div>
