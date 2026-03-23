@@ -59,7 +59,7 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="text-slate-500 text-base md:text-lg leading-relaxed">
-            日常のちょっと困ったをAIで解決する、<br className="hidden md:block" />
+            日常のちょっとした便利を提供したい、<br className="hidden md:block" />
             bobzabethの自作ツール置き場です🧰
           </p>
         </header>
