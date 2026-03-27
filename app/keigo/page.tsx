@@ -154,7 +154,7 @@ export default function KeigoPlusPage() {
           </button>
 
           <p className="text-[10px] text-center text-slate-400 -mt-2">
-            ※無料版は1日3回まで利用可能です。
+            ※無料版は1日10回まで利用可能です。
           </p>
 
           {error && (
