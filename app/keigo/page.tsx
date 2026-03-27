@@ -31,8 +31,8 @@ export default function KeigoPlusPage() {
       usage = { date: today, count: 0 };
     }
 
-    if (!isAdmin && usage.count >= 3) {
-      setError("本日の利用回数（3回）を超えました。また明日お越しください！");
+    if (!isAdmin && usage.count >= 10) {
+      setError("本日の利用回数（10回）を超えました。また明日お越しください！");
       return;
     }
 
