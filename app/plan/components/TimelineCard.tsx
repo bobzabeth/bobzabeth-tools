@@ -21,12 +21,6 @@ type Props = ViewProps | EditProps;
 export default function TimelineCard(props: Props) {
   const { item } = props;
   const isEditing = props.isEditing === true;
-  const hasExtra = item.memo || item.mapUrl;
-  const [expanded, setExpanded] = useState(!!hasExtra);
-
-  // 編集から戻ったとき、データがあれば自動展開
-  const currentHasExtra = item.memo || item.mapUrl;
-
   if (isEditing && props.isEditing) {
     return (
       <EditCard
@@ -38,27 +32,10 @@ export default function TimelineCard(props: Props) {
     );
   }
 
-  return (
-    <ViewCard
-      item={item}
-      expanded={expanded || !!currentHasExtra && expanded}
-      hasExtra={!!currentHasExtra}
-      onToggle={() => setExpanded((v) => !v)}
-    />
-  );
+  return <ViewCard item={item} />;
 }
 
-function ViewCard({
-  item,
-  expanded,
-  hasExtra,
-  onToggle,
-}: {
-  item: Item;
-  expanded: boolean;
-  hasExtra: boolean;
-  onToggle: () => void;
-}) {
+function ViewCard({ item }: { item: Item }) {
   return (
     <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
       <div className="flex items-start gap-3 p-5">
@@ -75,34 +52,23 @@ function ViewCard({
           <div className="w-0.5 flex-1 bg-sky-100 mt-1" />
         </div>
         {/* 内容 */}
-        <div className="flex-1 min-w-0 pb-2">
+        <div className="flex-1 min-w-0 pb-2 space-y-2">
           <p className="font-black text-slate-800 leading-tight">{item.name}</p>
-          {hasExtra && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggle(); }}
-              className="text-[11px] text-sky-400 font-medium mt-1 hover:text-sky-600 transition-colors"
-            >
-              {expanded ? "▲ 閉じる" : "▼ 詳細を見る"}
-            </button>
+          {item.memo && (
+            <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
+              {item.memo}
+            </p>
           )}
-          {expanded && (
-            <div className="mt-2 space-y-2">
-              {item.memo && (
-                <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
-                  {item.memo}
-                </p>
-              )}
-              {item.mapUrl && (
-                <a
-                  href={item.mapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
-                >
-                  📍 地図を開く
-                </a>
-              )}
-            </div>
+          {item.mapUrl && (
+            <a
+              href={item.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
+            >
+              📍 地図を開く
+            </a>
           )}
         </div>
       </div>

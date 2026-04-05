@@ -24,10 +24,12 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
   // どのカード間の移動情報を編集中か（上側のカードのid）
   const [editingTransportId, setEditingTransportId] = useState<string | null>(null);
 
-  const handleTransportSave = (item: Item, mode: TransportMode | "", duration: string) => {
+  const handleTransportSave = (item: Item, mode: TransportMode | "", durationMin: string, durationMax: string) => {
     onUpdate?.({
       ...item,
-      transport: mode ? { mode, duration: duration || undefined } : undefined,
+      transport: mode
+        ? { mode, durationMin: durationMin || undefined, durationMax: durationMax || undefined }
+        : undefined,
     });
     setEditingTransportId(null);
   };
@@ -84,7 +86,7 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
                 {isEditingTransport ? (
                   <TransportEditor
                     item={item}
-                    onSave={(mode, duration) => handleTransportSave(item, mode, duration)}
+                    onSave={(mode, min, max) => handleTransportSave(item, mode, min, max)}
                     onCancel={() => setEditingTransportId(null)}
                   />
                 ) : item.transport && isEditable ? (
@@ -122,13 +124,15 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
   );
 });
 
-function parseDuration(s: string): { amount: string; unit: "分" | "時間" } {
-  if (!s) return { amount: "", unit: "分" };
-  const hourMatch = s.match(/(\d+)\s*時間/);
-  const minMatch = s.match(/(\d+)\s*分/);
-  if (hourMatch) return { amount: hourMatch[1], unit: "時間" };
-  if (minMatch) return { amount: minMatch[1], unit: "分" };
-  return { amount: s, unit: "分" };
+function parseAmount(s?: string): string {
+  if (!s) return "";
+  const m = s.match(/(\d+)/);
+  return m ? m[1] : "";
+}
+
+function parseUnit(s?: string): "分" | "時間" {
+  if (!s) return "分";
+  return s.includes("時間") ? "時間" : "分";
 }
 
 function TransportEditor({
@@ -137,16 +141,19 @@ function TransportEditor({
   onCancel,
 }: {
   item: Item;
-  onSave: (mode: TransportMode | "", duration: string) => void;
+  onSave: (mode: TransportMode | "", durationMin: string, durationMax: string) => void;
   onCancel: () => void;
 }) {
-  const [mode, setMode] = useState<TransportMode | "">(item.transport?.mode ?? "");
-  const parsed = parseDuration(item.transport?.duration ?? "");
-  const [amount, setAmount] = useState(parsed.amount);
-  const [unit, setUnit] = useState<"分" | "時間">(parsed.unit);
-  const hasExisting = !!item.transport;
+  const t = item.transport;
+  const [mode, setMode] = useState<TransportMode | "">(t?.mode ?? "");
+  const [minAmount, setMinAmount] = useState(parseAmount(t?.durationMin ?? t?.duration));
+  const [maxAmount, setMaxAmount] = useState(parseAmount(t?.durationMax));
+  const [unit, setUnit] = useState<"分" | "時間">(
+    parseUnit(t?.durationMin ?? t?.durationMax ?? t?.duration)
+  );
+  const hasExisting = !!t;
 
-  const duration = amount ? `${amount}${unit}` : "";
+  const buildDuration = (amount: string) => (amount ? `${amount}${unit}` : "");
 
   return (
     <div className="mx-2 bg-sky-50 border-2 border-sky-200 rounded-2xl px-4 py-3 space-y-3">
@@ -162,13 +169,22 @@ function TransportEditor({
           <option key={k} value={k}>{v}</option>
         ))}
       </select>
-      {/* 2行目：数字＋分/時間スイッチ */}
+      {/* 2行目：最速 ～ 最遅 ＋ 単位スイッチ */}
       <div className="flex items-center gap-2">
         <input
           type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0"
+          value={minAmount}
+          onChange={(e) => setMinAmount(e.target.value)}
+          placeholder="最短"
+          min={1}
+          className="w-16 border-2 border-slate-100 rounded-xl px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white text-center"
+        />
+        <span className="text-slate-400 text-sm font-bold">〜</span>
+        <input
+          type="number"
+          value={maxAmount}
+          onChange={(e) => setMaxAmount(e.target.value)}
+          placeholder="最長"
           min={1}
           className="w-16 border-2 border-slate-100 rounded-xl px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white text-center"
         />
@@ -192,7 +208,7 @@ function TransportEditor({
       <div className="flex items-center justify-between">
         {hasExisting ? (
           <button
-            onClick={() => onSave("", "")}
+            onClick={() => onSave("", "", "")}
             className="text-xs text-red-400 hover:text-red-600 transition-colors"
           >
             移動情報を削除
@@ -208,7 +224,7 @@ function TransportEditor({
             キャンセル
           </button>
           <button
-            onClick={() => onSave(mode, duration)}
+            onClick={() => onSave(mode, buildDuration(minAmount), buildDuration(maxAmount))}
             className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
           >
             保存
