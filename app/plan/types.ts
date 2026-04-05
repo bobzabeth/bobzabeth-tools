@@ -11,10 +11,11 @@ export type Transport = {
 export type Item = {
   id: string;
   startTime: string;
-  endTime?: string;
   name: string;
   memo?: string;
   mapUrl?: string;
+  endTime?: string;
+  endMemo?: string;
   transport?: Transport;
 };
 

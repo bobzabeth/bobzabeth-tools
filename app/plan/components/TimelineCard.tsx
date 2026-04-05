@@ -31,20 +31,17 @@ export default function TimelineCard(props: Props) {
       />
     );
   }
-
   return <ViewCard item={item} />;
 }
 
 function ViewCard({ item }: { item: Item }) {
+  const hasEnd = item.endTime || item.endMemo;
   return (
     <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
       <div className="flex items-start gap-3 p-5">
         {/* 時間 */}
         <div className="flex-shrink-0 text-right min-w-[52px]">
           <p className="text-sm font-black text-sky-500">{item.startTime}</p>
-          {item.endTime && (
-            <p className="text-[10px] text-slate-400 font-medium">{item.endTime}</p>
-          )}
         </div>
         {/* 縦線 */}
         <div className="flex-shrink-0 flex flex-col items-center pt-1">
@@ -70,6 +67,17 @@ function ViewCard({ item }: { item: Item }) {
               📍 地図を開く
             </a>
           )}
+          {/* 終了セクション */}
+          {hasEnd && (
+            <div className="border-t border-sky-50 pt-2 space-y-1">
+              {item.endTime && (
+                <p className="text-sm font-black text-sky-400">{item.endTime}</p>
+              )}
+              {item.endMemo && (
+                <p className="font-black text-slate-600 leading-tight">{item.endMemo}</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -89,14 +97,16 @@ function EditCard({
 }) {
   const [draft, setDraft] = useState<Item>(item);
   const [showOptional, setShowOptional] = useState(!!(item.memo || item.mapUrl));
-  const isNew = item.name === "";
+  const [showEnd, setShowEnd] = useState(!!(item.endTime || item.endMemo));
   const startTimeRef = useRef<HTMLInputElement>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
 
-  // 新規コマのとき開始時間にauto-focus
+  // 新規コマのときだけ開始時間にauto-focus（一度だけ）
   useEffect(() => {
-    if (isNew) startTimeRef.current?.focus();
-  }, [isNew]);
+    if (item.name === "") {
+      startTimeRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const update = (patch: Partial<Item>) => {
     const updated = { ...draft, ...patch };
@@ -117,44 +127,20 @@ function EditCard({
         </button>
       </div>
 
-      {/* 時間 */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">開始</label>
-          <input
-            ref={startTimeRef}
-            type="time"
-            value={draft.startTime}
-            onChange={(e) => update({ startTime: e.target.value })}
-            onBlur={() => { if (isNew) nameRef.current?.focus(); }}
-            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">終了</label>
-          <input
-            type="text"
-            value={draft.endTime ?? ""}
-            onChange={(e) => update({ endTime: e.target.value || undefined })}
-            placeholder="例：11:30"
-            maxLength={5}
-            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50 w-24"
-          />
-          {draft.endTime && (
-            <button
-              type="button"
-              onClick={() => update({ endTime: undefined })}
-              className="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none"
-            >
-              ×
-            </button>
-          )}
-        </div>
+      {/* 1行目：開始時間 */}
+      <div className="flex items-center gap-1.5">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14">開始時間</label>
+        <input
+          ref={startTimeRef}
+          type="time"
+          value={draft.startTime}
+          onChange={(e) => update({ startTime: e.target.value })}
+          className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+        />
       </div>
 
-      {/* イベント名 */}
+      {/* 2行目：イベント名 */}
       <input
-        ref={nameRef}
         type="text"
         value={draft.name}
         onChange={(e) => update({ name: e.target.value })}
@@ -162,18 +148,16 @@ function EditCard({
         className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-slate-700 font-bold focus:outline-none focus:border-sky-300 bg-slate-50"
       />
 
-      {/* オプション展開 */}
+      {/* 3行目：メモ・地図URL（任意） */}
       <button
         type="button"
         onClick={() => setShowOptional((v) => !v)}
         className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
       >
-        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・地図URLを追加"}
+        {showOptional ? "▲ メモ・地図URLを閉じる" : "▼ メモ・地図URLを追加"}
       </button>
-
       {showOptional && (
         <div className="space-y-3 pt-1">
-          {/* メモ */}
           <textarea
             value={draft.memo ?? ""}
             onChange={(e) => update({ memo: e.target.value || undefined })}
@@ -181,13 +165,54 @@ function EditCard({
             rows={2}
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:border-sky-300 bg-slate-50"
           />
-          {/* 地図URL */}
           <input
             type="url"
             value={draft.mapUrl ?? ""}
             onChange={(e) => update({ mapUrl: e.target.value || undefined })}
             placeholder="地図URL（Google Maps等、任意）"
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+        </div>
+      )}
+
+      {/* 4〜5行目：終了時間・終了メモ（任意） */}
+      <button
+        type="button"
+        onClick={() => setShowEnd((v) => !v)}
+        className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
+      >
+        {showEnd ? "▲ 終了情報を閉じる" : "▼ 終了時間・終了メモを追加"}
+      </button>
+      {showEnd && (
+        <div className="space-y-3 pt-1">
+          {/* 4行目：終了時間 */}
+          <div className="flex items-center gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14">終了時間</label>
+            <input
+              type="text"
+              value={draft.endTime ?? ""}
+              onChange={(e) => update({ endTime: e.target.value || undefined })}
+              placeholder="例：11:30"
+              maxLength={5}
+              className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50 w-24"
+            />
+            {draft.endTime && (
+              <button
+                type="button"
+                onClick={() => update({ endTime: undefined })}
+                className="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {/* 5行目：終了メモ */}
+          <input
+            type="text"
+            value={draft.endMemo ?? ""}
+            onChange={(e) => update({ endMemo: e.target.value || undefined })}
+            placeholder="終了メモ（例：解散！）"
+            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-slate-700 font-bold focus:outline-none focus:border-sky-300 bg-slate-50"
           />
         </div>
       )}
