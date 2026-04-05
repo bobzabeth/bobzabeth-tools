@@ -27,6 +27,7 @@ function newItem(): Item {
 export default function PlanPage() {
   const [itinerary, setItinerary] = useState<Itinerary>(DEFAULT_ITINERARY);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isPreview, setIsPreview] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
   const [exporting, setExporting] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -162,28 +163,42 @@ export default function PlanPage() {
 
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-            タイムライン — {itinerary.items.length}コマ
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              タイムライン — {itinerary.items.length}コマ
+            </p>
+            <button
+              onClick={() => { setIsPreview((v) => !v); setEditingId(null); }}
+              className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all ${
+                isPreview
+                  ? "bg-sky-500 text-white"
+                  : "border-2 border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-600"
+              }`}
+            >
+              {isPreview ? "✏️ 編集に戻る" : "👁 完成プレビュー"}
+            </button>
+          </div>
           <TimelineView
             ref={timelineRef}
             itinerary={itinerary}
-            editingId={editingId}
-            onUpdate={updateItem}
-            onDelete={deleteItem}
-            onCardClick={(id) =>
+            editingId={isPreview ? null : editingId}
+            onUpdate={isPreview ? undefined : updateItem}
+            onDelete={isPreview ? undefined : deleteItem}
+            onCardClick={isPreview ? undefined : (id) =>
               setEditingId((prev) => (prev === id ? null : id))
             }
             onClose={() => setEditingId(null)}
           />
 
-          {/* コマ追加ボタン */}
-          <button
-            onClick={addItem}
-            className="mt-4 w-full border-2 border-dashed border-sky-200 rounded-2xl py-3 text-sky-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-bold"
-          >
-            ＋ コマを追加
-          </button>
+          {/* コマ追加ボタン（プレビュー時は非表示） */}
+          {!isPreview && (
+            <button
+              onClick={addItem}
+              className="mt-4 w-full border-2 border-dashed border-sky-200 rounded-2xl py-3 text-sky-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-bold"
+            >
+              ＋ コマを追加
+            </button>
+          )}
         </div>
 
         {/* アクションエリア */}

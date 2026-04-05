@@ -122,6 +122,15 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
   );
 });
 
+function parseDuration(s: string): { amount: string; unit: "分" | "時間" } {
+  if (!s) return { amount: "", unit: "分" };
+  const hourMatch = s.match(/(\d+)\s*時間/);
+  const minMatch = s.match(/(\d+)\s*分/);
+  if (hourMatch) return { amount: hourMatch[1], unit: "時間" };
+  if (minMatch) return { amount: minMatch[1], unit: "分" };
+  return { amount: s, unit: "分" };
+}
+
 function TransportEditor({
   item,
   onSave,
@@ -132,7 +141,12 @@ function TransportEditor({
   onCancel: () => void;
 }) {
   const [mode, setMode] = useState<TransportMode | "">(item.transport?.mode ?? "");
-  const [duration, setDuration] = useState(item.transport?.duration ?? "");
+  const parsed = parseDuration(item.transport?.duration ?? "");
+  const [amount, setAmount] = useState(parsed.amount);
+  const [unit, setUnit] = useState<"分" | "時間">(parsed.unit);
+  const hasExisting = !!item.transport;
+
+  const duration = amount ? `${amount}${unit}` : "";
 
   return (
     <div className="mx-2 bg-sky-50 border-2 border-sky-200 rounded-2xl px-4 py-3 space-y-3">
@@ -143,32 +157,61 @@ function TransportEditor({
           onChange={(e) => setMode(e.target.value as TransportMode | "")}
           className="border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
         >
-          <option value="">なし</option>
+          <option value="">手段を選ぶ</option>
           {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
         <input
-          type="text"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          placeholder="所要時間（例：約15分）"
-          className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white min-w-0"
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="時間"
+          min={1}
+          className="w-16 border-2 border-slate-100 rounded-xl px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white text-center"
         />
+        <div className="flex rounded-xl overflow-hidden border-2 border-slate-100">
+          {(["分", "時間"] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => setUnit(u)}
+              className={`px-3 py-1.5 text-sm font-bold transition-colors ${
+                unit === u
+                  ? "bg-sky-500 text-white"
+                  : "bg-white text-slate-400 hover:bg-sky-50"
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex gap-2 justify-end">
-        <button
-          onClick={onCancel}
-          className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-3 py-1.5"
-        >
-          キャンセル
-        </button>
-        <button
-          onClick={() => onSave(mode, duration)}
-          className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
-        >
-          保存
-        </button>
+      <div className="flex items-center justify-between">
+        {hasExisting ? (
+          <button
+            onClick={() => onSave("", "")}
+            className="text-xs text-red-400 hover:text-red-600 transition-colors"
+          >
+            移動情報を削除
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors px-3 py-1.5"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={() => onSave(mode, duration)}
+            className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
+          >
+            保存
+          </button>
+        </div>
       </div>
     </div>
   );
