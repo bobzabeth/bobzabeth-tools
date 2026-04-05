@@ -38,47 +38,61 @@ function ViewCard({ item }: { item: Item }) {
   const hasEnd = item.endTime || item.endMemo;
   return (
     <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
-      <div className="flex items-start gap-3 p-5">
-        {/* 時間 */}
-        <div className="flex-shrink-0 text-right min-w-[52px]">
-          <p className="text-sm font-black text-sky-500">{item.startTime}</p>
+      <div className="p-5 space-y-0">
+        {/* 開始行 */}
+        <div className="flex items-start gap-3">
+          {/* 時間列 */}
+          <div className="flex-shrink-0 text-right min-w-[52px]">
+            <p className="text-sm font-black text-sky-500">{item.startTime}</p>
+          </div>
+          {/* ドット＋縦線列 */}
+          <div className="flex-shrink-0 flex flex-col items-center pt-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
+            {hasEnd && <div className="w-0.5 flex-1 bg-sky-100 mt-1 min-h-[1.5rem]" />}
+          </div>
+          {/* 内容列 */}
+          <div className={`flex-1 min-w-0 space-y-2 ${hasEnd ? "pb-2" : "pb-1"}`}>
+            <p className="font-black text-slate-800 leading-tight">{item.name}</p>
+            {item.memo && (
+              <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
+                {item.memo}
+              </p>
+            )}
+            {item.mapUrl && (
+              <a
+                href={item.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
+              >
+                📍 地図を開く
+              </a>
+            )}
+          </div>
         </div>
-        {/* 縦線 */}
-        <div className="flex-shrink-0 flex flex-col items-center pt-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
-          <div className="w-0.5 flex-1 bg-sky-100 mt-1" />
-        </div>
-        {/* 内容 */}
-        <div className="flex-1 min-w-0 pb-2 space-y-2">
-          <p className="font-black text-slate-800 leading-tight">{item.name}</p>
-          {item.memo && (
-            <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
-              {item.memo}
-            </p>
-          )}
-          {item.mapUrl && (
-            <a
-              href={item.mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
-            >
-              📍 地図を開く
-            </a>
-          )}
-          {/* 終了セクション */}
-          {hasEnd && (
-            <div className="border-t border-sky-50 pt-2 space-y-1">
+
+        {/* 終了行 */}
+        {hasEnd && (
+          <div className="flex items-start gap-3">
+            {/* 終了時間列 */}
+            <div className="flex-shrink-0 text-right min-w-[52px]">
               {item.endTime && (
-                <p className="text-sm font-black text-sky-400">{item.endTime}</p>
-              )}
-              {item.endMemo && (
-                <p className="font-black text-slate-600 leading-tight">{item.endMemo}</p>
+                <p className="text-sm font-black text-sky-500">{item.endTime}</p>
               )}
             </div>
-          )}
-        </div>
+            {/* ドット列 */}
+            <div className="flex-shrink-0 flex flex-col items-center pt-1">
+              <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
+            </div>
+            {/* 終了メモ列 */}
+            <div className="flex-1 min-w-0 pb-1">
+              {item.endMemo && (
+                <p className="font-black text-slate-800 leading-tight">{item.endMemo}</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -189,12 +203,10 @@ function EditCard({
           <div className="flex items-center gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14">終了時間</label>
             <input
-              type="text"
+              type="time"
               value={draft.endTime ?? ""}
               onChange={(e) => update({ endTime: e.target.value || undefined })}
-              placeholder="例：11:30"
-              maxLength={5}
-              className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50 w-24"
+              className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
             />
             {draft.endTime && (
               <button
@@ -211,7 +223,7 @@ function EditCard({
             type="text"
             value={draft.endMemo ?? ""}
             onChange={(e) => update({ endMemo: e.target.value || undefined })}
-            placeholder="終了メモ（例：解散！）"
+            placeholder="終了メモ（例：清水寺を出発）"
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-slate-700 font-bold focus:outline-none focus:border-sky-300 bg-slate-50"
           />
         </div>
