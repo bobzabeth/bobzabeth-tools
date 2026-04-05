@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Item, TransportMode } from "../types";
-import { TRANSPORT_LABELS } from "../utils";
+import type { Item } from "../types";
 
 type ViewProps = {
   item: Item;
@@ -123,9 +122,7 @@ function EditCard({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<Item>(item);
-  const [showOptional, setShowOptional] = useState(
-    !!(item.memo || item.mapUrl || item.transport)
-  );
+  const [showOptional, setShowOptional] = useState(!!(item.memo || item.mapUrl));
 
   const update = (patch: Partial<Item>) => {
     const updated = { ...draft, ...patch };
@@ -194,7 +191,7 @@ function EditCard({
         onClick={() => setShowOptional((v) => !v)}
         className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
       >
-        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・地図・移動情報を追加"}
+        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・地図URLを追加"}
       </button>
 
       {showOptional && (
@@ -215,47 +212,6 @@ function EditCard({
             placeholder="地図URL（Google Maps等、任意）"
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
           />
-          {/* 移動情報 */}
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-              次のコマへの移動
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                value={draft.transport?.mode ?? ""}
-                onChange={(e) => {
-                  const mode = e.target.value as TransportMode;
-                  update({
-                    transport: mode
-                      ? { mode, duration: draft.transport?.duration }
-                      : undefined,
-                  });
-                }}
-                className="border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-              >
-                <option value="">なし</option>
-                {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-              {draft.transport && (
-                <input
-                  type="text"
-                  value={draft.transport.duration ?? ""}
-                  onChange={(e) =>
-                    update({
-                      transport: {
-                        ...draft.transport!,
-                        duration: e.target.value || undefined,
-                      },
-                    })
-                  }
-                  placeholder="所要時間（例：約15分）"
-                  className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-                />
-              )}
-            </div>
-          </div>
         </div>
       )}
 
