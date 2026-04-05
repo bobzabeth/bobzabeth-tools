@@ -86,15 +86,14 @@ export default function PlanPage() {
     if (!timelineRef.current) return;
     setExporting(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(timelineRef.current, {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(timelineRef.current, {
         backgroundColor: "#FFFBF5",
-        scale: 2,
-        useCORS: true,
+        pixelRatio: 2,
       });
       const link = document.createElement("a");
       link.download = `${itinerary.title || "旅程"}_${itinerary.date}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } finally {
       setExporting(false);
