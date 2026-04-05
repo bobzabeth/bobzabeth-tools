@@ -14,6 +14,7 @@ type EditProps = {
   isEditing: true;
   onUpdate: (updated: Item) => void;
   onDelete: () => void;
+  onClose: () => void;
 };
 
 type Props = ViewProps | EditProps;
@@ -21,7 +22,11 @@ type Props = ViewProps | EditProps;
 export default function TimelineCard(props: Props) {
   const { item } = props;
   const isEditing = props.isEditing === true;
-  const [expanded, setExpanded] = useState(false);
+  const hasExtra = item.memo || item.mapUrl;
+  const [expanded, setExpanded] = useState(!!hasExtra);
+
+  // 編集から戻ったとき、データがあれば自動展開
+  const currentHasExtra = item.memo || item.mapUrl;
 
   if (isEditing && props.isEditing) {
     return (
@@ -29,23 +34,32 @@ export default function TimelineCard(props: Props) {
         item={item}
         onUpdate={props.onUpdate}
         onDelete={props.onDelete}
+        onClose={props.onClose}
       />
     );
   }
 
-  return <ViewCard item={item} expanded={expanded} onToggle={() => setExpanded((v) => !v)} />;
+  return (
+    <ViewCard
+      item={item}
+      expanded={expanded || !!currentHasExtra && expanded}
+      hasExtra={!!currentHasExtra}
+      onToggle={() => setExpanded((v) => !v)}
+    />
+  );
 }
 
 function ViewCard({
   item,
   expanded,
+  hasExtra,
   onToggle,
 }: {
   item: Item;
   expanded: boolean;
+  hasExtra: boolean;
   onToggle: () => void;
 }) {
-  const hasExtra = item.memo || item.photoUrl || item.mapUrl;
   return (
     <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
       <div className="flex items-start gap-3 p-5">
@@ -66,7 +80,7 @@ function ViewCard({
           <p className="font-black text-slate-800 leading-tight">{item.name}</p>
           {hasExtra && (
             <button
-              onClick={onToggle}
+              onClick={(e) => { e.stopPropagation(); onToggle(); }}
               className="text-[11px] text-sky-400 font-medium mt-1 hover:text-sky-600 transition-colors"
             >
               {expanded ? "▲ 閉じる" : "▼ 詳細を見る"}
@@ -74,14 +88,6 @@ function ViewCard({
           )}
           {expanded && (
             <div className="mt-2 space-y-2">
-              {item.photoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.photoUrl}
-                  alt={item.name}
-                  className="w-full rounded-2xl object-cover max-h-48"
-                />
-              )}
               {item.memo && (
                 <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
                   {item.memo}
@@ -109,14 +115,16 @@ function EditCard({
   item,
   onUpdate,
   onDelete,
+  onClose,
 }: {
   item: Item;
   onUpdate: (updated: Item) => void;
   onDelete: () => void;
+  onClose: () => void;
 }) {
   const [draft, setDraft] = useState<Item>(item);
   const [showOptional, setShowOptional] = useState(
-    !!(item.memo || item.photoUrl || item.mapUrl || item.transport)
+    !!(item.memo || item.mapUrl || item.transport)
   );
 
   const update = (patch: Partial<Item>) => {
@@ -127,6 +135,17 @@ function EditCard({
 
   return (
     <div className="bg-white border-2 border-sky-300 rounded-3xl p-5 shadow-lg space-y-3">
+      {/* 完了ボタン */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
+        >
+          完了
+        </button>
+      </div>
+
       {/* 時間 */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1.5">
@@ -141,11 +160,22 @@ function EditCard({
         <div className="flex items-center gap-1.5">
           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">終了</label>
           <input
-            type="time"
+            type="text"
             value={draft.endTime ?? ""}
             onChange={(e) => update({ endTime: e.target.value || undefined })}
-            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+            placeholder="例：11:30"
+            maxLength={5}
+            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50 w-24"
           />
+          {draft.endTime && (
+            <button
+              type="button"
+              onClick={() => update({ endTime: undefined })}
+              className="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
@@ -164,7 +194,7 @@ function EditCard({
         onClick={() => setShowOptional((v) => !v)}
         className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
       >
-        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・写真・地図・移動情報を追加"}
+        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・地図・移動情報を追加"}
       </button>
 
       {showOptional && (
@@ -176,14 +206,6 @@ function EditCard({
             placeholder="メモ（任意）"
             rows={2}
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:border-sky-300 bg-slate-50"
-          />
-          {/* 写真URL */}
-          <input
-            type="url"
-            value={draft.photoUrl ?? ""}
-            onChange={(e) => update({ photoUrl: e.target.value || undefined })}
-            placeholder="写真URL（任意）"
-            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
           />
           {/* 地図URL */}
           <input

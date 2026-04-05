@@ -11,7 +11,6 @@ export type Item = {
   endTime?: string;
   name: string;
   memo?: string;
-  photoUrl?: string;
   mapUrl?: string;
   transport?: Transport;
 };

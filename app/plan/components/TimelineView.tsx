@@ -10,10 +10,11 @@ type Props = {
   onUpdate?: (updated: Item) => void;
   onDelete?: (id: string) => void;
   onCardClick?: (id: string) => void;
+  onClose?: () => void;
 };
 
 const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
-  { itinerary, editingId, onUpdate, onDelete, onCardClick },
+  { itinerary, editingId, onUpdate, onDelete, onCardClick, onClose },
   ref
 ) {
   const sorted = sortItemsByTime(itinerary.items);
@@ -54,6 +55,7 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
                   isEditing={true}
                   onUpdate={onUpdate}
                   onDelete={() => onDelete(item.id)}
+                  onClose={() => onClose?.()}
                 />
               ) : (
                 <TimelineCard item={item} />
@@ -63,7 +65,6 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
             {item.transport && index < sorted.length - 1 && (
               <TransportBadge transport={item.transport} />
             )}
-            {/* 移動バッジなしの場合のスペーサー */}
             {!item.transport && index < sorted.length - 1 && (
               <div className="h-3" />
             )}

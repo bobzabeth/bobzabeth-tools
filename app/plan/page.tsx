@@ -174,6 +174,7 @@ export default function PlanPage() {
             onCardClick={(id) =>
               setEditingId((prev) => (prev === id ? null : id))
             }
+            onClose={() => setEditingId(null)}
           />
 
           {/* コマ追加ボタン */}
