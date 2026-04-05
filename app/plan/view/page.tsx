@@ -11,15 +11,16 @@ function ViewContent() {
   const itinerary = d ? decodeItinerary(d) : null;
   const timelineRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [copyMsg, setCopyMsg] = useState("");
 
   if (!itinerary) {
     return (
       <div className="text-center py-24 space-y-3">
         <p className="text-4xl">😢</p>
-        <p className="text-slate-500 font-medium">旅程データが見つかりませんでした</p>
+        <p className="text-slate-500 font-medium">データが見つかりませんでした</p>
         <a href="/plan" className="text-sm text-sky-500 hover:underline">
-          新しく旅程を作る →
+          新しくプランを作る →
         </a>
       </div>
     );
@@ -34,13 +35,18 @@ function ViewContent() {
         backgroundColor: "#FFFBF5",
         pixelRatio: 2,
       });
-      const link = document.createElement("a");
-      link.download = `${itinerary.title || "旅程"}_${itinerary.date}.png`;
-      link.href = dataUrl;
-      link.click();
+      setPreviewUrl(dataUrl);
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleDownload = () => {
+    if (!previewUrl) return;
+    const link = document.createElement("a");
+    link.download = `${itinerary.title || "おでかけ"}_${itinerary.date}.png`;
+    link.href = previewUrl;
+    link.click();
   };
 
   const handleCopyUrl = async () => {
@@ -53,6 +59,11 @@ function ViewContent() {
     setTimeout(() => setCopyMsg(""), 2500);
   };
 
+  const handleLineShare = () => {
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}`;
+    window.open(lineUrl, "_blank");
+  };
+
   return (
     <div className="space-y-4">
       {/* タイムライン */}
@@ -62,6 +73,14 @@ function ViewContent() {
 
       {/* アクションエリア */}
       <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
+        <button
+          onClick={handleLineShare}
+          style={{ backgroundColor: "#06C755" }}
+          className="w-full text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
+        >
+          <span className="font-black">LINE</span>
+          <span>でシェア</span>
+        </button>
         <button
           onClick={handleExport}
           disabled={exporting}
@@ -87,7 +106,7 @@ function ViewContent() {
       <footer className="text-center text-xs text-slate-300 pb-4 space-y-2">
         <p>
           <a href="/plan" className="hover:text-sky-400 transition-colors">
-            自分の旅程を作る →
+            自分のプランを作る →
           </a>
         </p>
         <p>
@@ -96,6 +115,36 @@ function ViewContent() {
           </a>
         </p>
       </footer>
+
+      {/* 画像プレビューモーダル */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">プレビュー</p>
+            <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPreviewUrl(null)}
+                className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95"
+              >
+                閉じる
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg shadow-sky-200 transition-all active:scale-95"
+              >
+                ダウンロード
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -103,7 +152,6 @@ function ViewContent() {
 export default function ViewPage() {
   return (
     <main className="min-h-screen bg-[#FFFBF5] font-sans text-slate-800">
-      {/* 背景装飾 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-sky-100 rounded-full opacity-60 blur-3xl" />
         <div className="absolute top-1/2 -left-20 w-80 h-80 bg-blue-100 rounded-full opacity-50 blur-3xl" />
@@ -111,7 +159,6 @@ export default function ViewPage() {
       </div>
 
       <div className="relative max-w-xl mx-auto px-4 py-12">
-        {/* ヘッダー */}
         <div className="mb-4 text-center">
           <span className="inline-block bg-sky-100 text-sky-600 text-xs font-bold px-3 py-1 rounded-full tracking-wide">
             おでかけプランナー

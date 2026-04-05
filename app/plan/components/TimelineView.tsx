@@ -24,11 +24,11 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
   // どのカード間の移動情報を編集中か（上側のカードのid）
   const [editingTransportId, setEditingTransportId] = useState<string | null>(null);
 
-  const handleTransportSave = (item: Item, mode: TransportMode | "", durationMin: string, durationMax: string) => {
+  const handleTransportSave = (item: Item, mode: TransportMode | "", durationMin: string, durationMax: string, memo: string) => {
     onUpdate?.({
       ...item,
       transport: mode
-        ? { mode, durationMin: durationMin || undefined, durationMax: durationMax || undefined }
+        ? { mode, durationMin: durationMin || undefined, durationMax: durationMax || undefined, memo: memo || undefined }
         : undefined,
     });
     setEditingTransportId(null);
@@ -86,7 +86,7 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
                 {isEditingTransport ? (
                   <TransportEditor
                     item={item}
-                    onSave={(mode, min, max) => handleTransportSave(item, mode, min, max)}
+                    onSave={(mode, min, max, memo) => handleTransportSave(item, mode, min, max, memo)}
                     onCancel={() => setEditingTransportId(null)}
                   />
                 ) : item.transport && isEditable ? (
@@ -141,7 +141,7 @@ function TransportEditor({
   onCancel,
 }: {
   item: Item;
-  onSave: (mode: TransportMode | "", durationMin: string, durationMax: string) => void;
+  onSave: (mode: TransportMode | "", durationMin: string, durationMax: string, memo: string) => void;
   onCancel: () => void;
 }) {
   const t = item.transport;
@@ -151,6 +151,7 @@ function TransportEditor({
   const [unit, setUnit] = useState<"分" | "時間">(
     parseUnit(t?.durationMin ?? t?.durationMax ?? t?.duration)
   );
+  const [memo, setMemo] = useState(t?.memo ?? "");
   const hasExisting = !!t;
 
   const buildDuration = (amount: string) => (amount ? `${amount}${unit}` : "");
@@ -211,10 +212,19 @@ function TransportEditor({
           ))}
         </div>
       </div>
+      {/* メモ */}
+      <input
+        type="text"
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="メモ（例：混雑注意、乗り換え1回）"
+        className="w-full border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
+      />
+
       <div className="flex items-center justify-between">
         {hasExisting ? (
           <button
-            onClick={() => onSave("", "", "")}
+            onClick={() => onSave("", "", "", "")}
             className="text-xs text-red-400 hover:text-red-600 transition-colors"
           >
             移動情報を削除
@@ -230,7 +240,7 @@ function TransportEditor({
             キャンセル
           </button>
           <button
-            onClick={() => onSave(mode, buildDuration(minAmount), buildDuration(maxAmount))}
+            onClick={() => onSave(mode, buildDuration(minAmount), buildDuration(maxAmount), memo)}
             className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
           >
             保存

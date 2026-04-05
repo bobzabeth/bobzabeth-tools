@@ -30,6 +30,7 @@ export default function PlanPage() {
   const [isPreview, setIsPreview] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   // localStorageから復元
@@ -92,13 +93,24 @@ export default function PlanPage() {
         backgroundColor: "#FFFBF5",
         pixelRatio: 2,
       });
-      const link = document.createElement("a");
-      link.download = `${itinerary.title || "旅程"}_${itinerary.date}.png`;
-      link.href = dataUrl;
-      link.click();
+      setPreviewUrl(dataUrl);
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleDownload = () => {
+    if (!previewUrl) return;
+    const link = document.createElement("a");
+    link.download = `${itinerary.title || "おでかけ"}_${itinerary.date}.png`;
+    link.href = previewUrl;
+    link.click();
+  };
+
+  const handleLineShare = () => {
+    const url = generateShareUrl(itinerary);
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
+    window.open(lineUrl, "_blank");
   };
 
   const handleReset = () => {
@@ -219,6 +231,15 @@ export default function PlanPage() {
             </p>
           )}
           <button
+            onClick={handleLineShare}
+            disabled={!itinerary.title || itinerary.items.length === 0}
+            style={{ backgroundColor: "#06C755" }}
+            className="w-full disabled:opacity-40 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
+          >
+            <span className="font-black">LINE</span>
+            <span>でシェア</span>
+          </button>
+          <button
             onClick={handleExport}
             disabled={exporting || itinerary.items.length === 0}
             className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 disabled:border-slate-100 disabled:text-slate-300 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
@@ -233,6 +254,36 @@ export default function PlanPage() {
             )}
           </button>
         </div>
+
+        {/* 画像プレビューモーダル */}
+        {previewUrl && (
+          <div
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            onClick={() => setPreviewUrl(null)}
+          >
+            <div
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">プレビュー</p>
+              <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPreviewUrl(null)}
+                  className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95"
+                >
+                  閉じる
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg shadow-sky-200 transition-all active:scale-95"
+                >
+                  ダウンロード
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* リセット */}
         <div className="text-center">
