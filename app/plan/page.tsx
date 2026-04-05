@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Item, Itinerary } from "./types";
 import {
-  generateShareUrl,
   loadDraft,
   saveDraft,
   sortItemsByTime,
+  savePlanToDb,
+  addMyPlanCode,
+  getMyPlanCodes,
+  removeMyPlanCode,
+  loadPlanFromDb,
 } from "./utils";
 import TimelineView from "./components/TimelineView";
 
@@ -24,26 +28,42 @@ function newItem(): Item {
   };
 }
 
+type MyPlan = { code: string; title: string; date: string };
+
 export default function PlanPage() {
   const [itinerary, setItinerary] = useState<Itinerary>(DEFAULT_ITINERARY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
-  const [shareMsg, setShareMsg] = useState("");
   const [exporting, setExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [myPlans, setMyPlans] = useState<MyPlan[]>([]);
+
+  // シェアモーダル
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharePassword, setSharePassword] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shareMsg, setShareMsg] = useState("");
+  const [shareForLine, setShareForLine] = useState(false);
+
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  // localStorageから復元
   useEffect(() => {
     const draft = loadDraft();
     if (draft) setItinerary(draft);
   }, []);
 
-  // 自動保存
   useEffect(() => {
     saveDraft(itinerary);
   }, [itinerary]);
+
+  // マイプラン読み込み
+  useEffect(() => {
+    const codes = getMyPlanCodes();
+    if (codes.length === 0) return;
+    Promise.all(codes.map((code) => loadPlanFromDb(code).then((r) => r ? { code, title: r.data.title, date: r.data.date } : null)))
+      .then((results) => setMyPlans(results.filter((r): r is MyPlan => r !== null)));
+  }, []);
 
   const updateItem = useCallback((updated: Item) => {
     setItinerary((prev) => ({
@@ -62,7 +82,6 @@ export default function PlanPage() {
 
   const addItem = () => {
     const item = newItem();
-    // 最後のアイテムの時間の1時間後を初期値に
     const sorted = sortItemsByTime(itinerary.items);
     if (sorted.length > 0) {
       const last = sorted[sorted.length - 1];
@@ -75,15 +94,39 @@ export default function PlanPage() {
     setNewItemId(item.id);
   };
 
-  const handleShare = async () => {
-    const url = generateShareUrl(itinerary);
+  const openShareModal = (forLine = false) => {
+    setShareForLine(forLine);
+    setSharePassword("");
+    setShareMsg("");
+    setShowShareModal(true);
+  };
+
+  const handleShareSave = async () => {
+    setSharing(true);
     try {
-      await navigator.clipboard.writeText(url);
-      setShareMsg("URLをコピーしました！");
+      const code = await savePlanToDb(itinerary, sharePassword || undefined);
+      addMyPlanCode(code);
+      // マイプランに追加
+      setMyPlans((prev) => [{ code, title: itinerary.title, date: itinerary.date }, ...prev.filter((p) => p.code !== code)]);
+
+      const url = `${window.location.origin}/plan/${code}`;
+      if (shareForLine) {
+        setShowShareModal(false);
+        window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`, "_blank");
+      } else {
+        try {
+          await navigator.clipboard.writeText(url);
+          setShareMsg("URLをコピーしました！");
+        } catch {
+          setShareMsg(url);
+        }
+        setTimeout(() => { setShowShareModal(false); setShareMsg(""); }, 2000);
+      }
     } catch {
-      setShareMsg(url);
+      setShareMsg("保存に失敗しました");
+    } finally {
+      setSharing(false);
     }
-    setTimeout(() => setShareMsg(""), 3000);
   };
 
   const handleExport = async () => {
@@ -109,21 +152,21 @@ export default function PlanPage() {
     link.click();
   };
 
-  const handleLineShare = () => {
-    const url = generateShareUrl(itinerary);
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
-    window.open(lineUrl, "_blank");
-  };
-
   const handleReset = () => {
     if (!confirm("作成中の旅程をリセットしますか？")) return;
     setItinerary(DEFAULT_ITINERARY);
     setEditingId(null);
   };
 
+  const handleRemoveMyPlan = (code: string) => {
+    removeMyPlanCode(code);
+    setMyPlans((prev) => prev.filter((p) => p.code !== code));
+  };
+
+  const canShare = !!itinerary.title && itinerary.items.length > 0;
+
   return (
     <main className="min-h-screen bg-[#FFFBF5] font-sans text-slate-800">
-      {/* 背景装飾 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-sky-100 rounded-full opacity-60 blur-3xl" />
         <div className="absolute top-1/2 -left-20 w-80 h-80 bg-blue-100 rounded-full opacity-50 blur-3xl" />
@@ -143,6 +186,31 @@ export default function PlanPage() {
             旅の流れをかんたんにまとめて、みんなにシェアしよう
           </p>
         </div>
+
+        {/* マイプラン */}
+        {myPlans.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイプラン</p>
+            {myPlans.map((plan) => (
+              <div key={plan.code} className="flex items-center gap-3 group">
+                <a
+                  href={`/plan/${plan.code}/edit`}
+                  className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
+                >
+                  <p className="font-bold text-slate-700 text-sm truncate">{plan.title || "タイトル未設定"}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
+                </a>
+                <button
+                  onClick={() => handleRemoveMyPlan(plan.code)}
+                  className="flex-shrink-0 text-slate-200 hover:text-red-400 transition-colors text-lg leading-none opacity-0 group-hover:opacity-100"
+                  title="リストから削除"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* タイトル・日付カード */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-4">
@@ -205,8 +273,6 @@ export default function PlanPage() {
             }}
             onClose={() => { setNewItemId(null); setEditingId(null); }}
           />
-
-          {/* コマ追加ボタン（プレビュー時は非表示） */}
           {!isPreview && (
             <button
               onClick={addItem}
@@ -223,22 +289,17 @@ export default function PlanPage() {
             シェア・書き出し
           </p>
           <button
-            onClick={handleShare}
-            disabled={!itinerary.title || itinerary.items.length === 0}
+            onClick={() => openShareModal(false)}
+            disabled={!canShare}
             className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             🔗 シェアURLをコピー
           </button>
-          {shareMsg && (
-            <p className="text-xs text-center text-sky-500 font-medium break-all">
-              {shareMsg}
-            </p>
-          )}
           <button
-            onClick={handleLineShare}
-            disabled={!itinerary.title || itinerary.items.length === 0}
-            style={{ backgroundColor: "#06C755" }}
-            className="w-full disabled:opacity-40 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
+            onClick={() => openShareModal(true)}
+            disabled={!canShare}
+            style={canShare ? { backgroundColor: "#06C755" } : undefined}
+            className="w-full disabled:opacity-40 disabled:bg-slate-200 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
           >
             <span className="font-black">LINE</span>
             <span>でシェア</span>
@@ -258,6 +319,55 @@ export default function PlanPage() {
             )}
           </button>
         </div>
+
+        {/* シェアモーダル */}
+        {showShareModal && (
+          <div
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowShareModal(false)}
+          >
+            <div
+              className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-base font-black text-slate-800">🔗 プランをシェア</p>
+              <div className="bg-slate-50 rounded-2xl px-4 py-3">
+                <p className="font-bold text-slate-700 text-sm">{itinerary.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{itinerary.date} / {itinerary.items.length}コマ</p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  編集パスワード（任意）
+                </label>
+                <input
+                  type="password"
+                  value={sharePassword}
+                  onChange={(e) => setSharePassword(e.target.value)}
+                  placeholder="設定しない場合はURL共有で誰でも編集可"
+                  className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
+                />
+              </div>
+              {shareMsg && (
+                <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleShareSave}
+                  disabled={sharing}
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg transition-all active:scale-95 disabled:opacity-60"
+                >
+                  {sharing ? "保存中..." : shareForLine ? "LINEでシェア" : "URLをコピー"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 画像プレビューモーダル */}
         {previewUrl && (

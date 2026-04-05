@@ -71,6 +71,87 @@ export function extractGoogleMapsName(url: string): string | null {
   return null;
 }
 
+// ---- DB (API Route 経由) ----
+
+export async function savePlanToDb(
+  itinerary: Itinerary,
+  editPassword?: string
+): Promise<string> {
+  const res = await fetch("/api/plans", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: itinerary, editPassword: editPassword || null }),
+  });
+  if (!res.ok) throw new Error("Failed to save plan");
+  const json = await res.json();
+  return json.shortCode as string;
+}
+
+export async function loadPlanFromDb(
+  code: string
+): Promise<{ data: Itinerary; hasPassword: boolean } | null> {
+  const res = await fetch(`/api/plans/${code}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function updatePlanInDb(
+  code: string,
+  itinerary: Itinerary,
+  editPassword?: string
+): Promise<boolean> {
+  const res = await fetch(`/api/plans/${code}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: itinerary, editPassword: editPassword || null }),
+  });
+  return res.ok;
+}
+
+export async function verifyPlanPassword(
+  code: string,
+  password: string
+): Promise<boolean> {
+  const res = await fetch(`/api/plans/${code}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ editPassword: password }),
+  });
+  return res.ok;
+}
+
+// ---- マイプラン (localStorage) ----
+
+const MY_PLANS_KEY = "my_plans";
+
+export function getMyPlanCodes(): string[] {
+  try {
+    const raw = localStorage.getItem(MY_PLANS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export function addMyPlanCode(code: string): void {
+  try {
+    const codes = getMyPlanCodes().filter((c) => c !== code);
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify([code, ...codes]));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+export function removeMyPlanCode(code: string): void {
+  try {
+    const codes = getMyPlanCodes().filter((c) => c !== code);
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify(codes));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
 const STORAGE_KEY = "itinerary_draft";
 
 export function saveDraft(itinerary: Itinerary): void {
