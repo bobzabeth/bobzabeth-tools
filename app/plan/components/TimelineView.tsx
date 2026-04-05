@@ -151,22 +151,24 @@ function TransportEditor({
   return (
     <div className="mx-2 bg-sky-50 border-2 border-sky-200 rounded-2xl px-4 py-3 space-y-3">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">移動情報</p>
-      <div className="flex items-center gap-2 flex-wrap">
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value as TransportMode | "")}
-          className="border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
-        >
-          <option value="">手段を選ぶ</option>
-          {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
+      {/* 1行目：移動手段 */}
+      <select
+        value={mode}
+        onChange={(e) => setMode(e.target.value as TransportMode | "")}
+        className="w-full border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
+      >
+        <option value="">手段を選ぶ</option>
+        {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
+          <option key={k} value={k}>{v}</option>
+        ))}
+      </select>
+      {/* 2行目：数字＋分/時間スイッチ */}
+      <div className="flex items-center gap-2">
         <input
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="時間"
+          placeholder="0"
           min={1}
           className="w-16 border-2 border-slate-100 rounded-xl px-2 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white text-center"
         />
