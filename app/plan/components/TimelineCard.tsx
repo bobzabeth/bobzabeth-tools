@@ -197,7 +197,16 @@ function EditCard({
       {/* 4〜5行目：終了時間・終了メモ（任意） */}
       <button
         type="button"
-        onClick={() => setShowEnd((v) => !v)}
+        onClick={() => {
+          const opening = !showEnd;
+          setShowEnd(opening);
+          // 開くタイミングで終了時間が空なら開始+1時間をセット
+          if (opening && !draft.endTime && draft.startTime) {
+            const [h, m] = draft.startTime.split(":").map(Number);
+            const nextH = Math.min(h + 1, 23);
+            update({ endTime: `${String(nextH).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
+          }
+        }}
         className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
       >
         {showEnd ? "▲ 終了情報を閉じる" : "▼ 終了時間・終了メモを追加"}
@@ -211,13 +220,6 @@ function EditCard({
               type="time"
               value={draft.endTime ?? ""}
               onChange={(e) => update({ endTime: e.target.value || undefined })}
-              onFocus={() => {
-                if (!draft.endTime && draft.startTime) {
-                  const [h, m] = draft.startTime.split(":").map(Number);
-                  const nextH = Math.min(h + 1, 23);
-                  update({ endTime: `${String(nextH).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
-                }
-              }}
               className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
             />
             {draft.endTime && (
