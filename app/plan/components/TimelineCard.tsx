@@ -12,6 +12,7 @@ type ViewProps = {
 type EditProps = {
   item: Item;
   isEditing: true;
+  autoFocus?: boolean;
   onUpdate: (updated: Item) => void;
   onDelete: () => void;
   onClose: () => void;
@@ -26,6 +27,7 @@ export default function TimelineCard(props: Props) {
     return (
       <EditCard
         item={item}
+        autoFocus={props.autoFocus}
         onUpdate={props.onUpdate}
         onDelete={props.onDelete}
         onClose={props.onClose}
@@ -101,11 +103,13 @@ function ViewCard({ item }: { item: Item }) {
 
 function EditCard({
   item,
+  autoFocus,
   onUpdate,
   onDelete,
   onClose,
 }: {
   item: Item;
+  autoFocus?: boolean;
   onUpdate: (updated: Item) => void;
   onDelete: () => void;
   onClose: () => void;
@@ -117,7 +121,7 @@ function EditCard({
 
   // 新規コマのときだけ開始時間にauto-focus（一度だけ）
   useEffect(() => {
-    if (item.name === "") {
+    if (autoFocus) {
       startTimeRef.current?.focus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +211,13 @@ function EditCard({
               type="time"
               value={draft.endTime ?? ""}
               onChange={(e) => update({ endTime: e.target.value || undefined })}
+              onFocus={() => {
+                if (!draft.endTime && draft.startTime) {
+                  const [h, m] = draft.startTime.split(":").map(Number);
+                  const nextH = Math.min(h + 1, 23);
+                  update({ endTime: `${String(nextH).padStart(2, "0")}:${String(m).padStart(2, "0")}` });
+                }
+              }}
               className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
             />
             {draft.endTime && (

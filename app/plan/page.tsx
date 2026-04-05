@@ -27,6 +27,7 @@ function newItem(): Item {
 export default function PlanPage() {
   const [itinerary, setItinerary] = useState<Itinerary>(DEFAULT_ITINERARY);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newItemId, setNewItemId] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -71,6 +72,7 @@ export default function PlanPage() {
     }
     setItinerary((prev) => ({ ...prev, items: [...prev.items, item] }));
     setEditingId(item.id);
+    setNewItemId(item.id);
   };
 
   const handleShare = async () => {
@@ -194,12 +196,14 @@ export default function PlanPage() {
             ref={timelineRef}
             itinerary={itinerary}
             editingId={isPreview ? null : editingId}
+            newItemId={isPreview ? null : newItemId}
             onUpdate={isPreview ? undefined : updateItem}
             onDelete={isPreview ? undefined : deleteItem}
-            onCardClick={isPreview ? undefined : (id) =>
-              setEditingId((prev) => (prev === id ? null : id))
-            }
-            onClose={() => setEditingId(null)}
+            onCardClick={isPreview ? undefined : (id) => {
+              setNewItemId(null);
+              setEditingId((prev) => (prev === id ? null : id));
+            }}
+            onClose={() => { setNewItemId(null); setEditingId(null); }}
           />
 
           {/* コマ追加ボタン（プレビュー時は非表示） */}
