@@ -1,0 +1,252 @@
+"use client";
+
+import { useState } from "react";
+import type { Item, TransportMode } from "../types";
+import { TRANSPORT_LABELS } from "../utils";
+
+type ViewProps = {
+  item: Item;
+  isEditing?: false;
+};
+
+type EditProps = {
+  item: Item;
+  isEditing: true;
+  onUpdate: (updated: Item) => void;
+  onDelete: () => void;
+};
+
+type Props = ViewProps | EditProps;
+
+export default function TimelineCard(props: Props) {
+  const { item } = props;
+  const isEditing = props.isEditing === true;
+  const [expanded, setExpanded] = useState(false);
+
+  if (isEditing && props.isEditing) {
+    return (
+      <EditCard
+        item={item}
+        onUpdate={props.onUpdate}
+        onDelete={props.onDelete}
+      />
+    );
+  }
+
+  return <ViewCard item={item} expanded={expanded} onToggle={() => setExpanded((v) => !v)} />;
+}
+
+function ViewCard({
+  item,
+  expanded,
+  onToggle,
+}: {
+  item: Item;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasExtra = item.memo || item.photoUrl || item.mapUrl;
+  return (
+    <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
+      <div className="flex items-start gap-3 p-5">
+        {/* 時間 */}
+        <div className="flex-shrink-0 text-right min-w-[52px]">
+          <p className="text-sm font-black text-sky-500">{item.startTime}</p>
+          {item.endTime && (
+            <p className="text-[10px] text-slate-400 font-medium">{item.endTime}</p>
+          )}
+        </div>
+        {/* 縦線 */}
+        <div className="flex-shrink-0 flex flex-col items-center pt-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
+          <div className="w-0.5 flex-1 bg-sky-100 mt-1" />
+        </div>
+        {/* 内容 */}
+        <div className="flex-1 min-w-0 pb-2">
+          <p className="font-black text-slate-800 leading-tight">{item.name}</p>
+          {hasExtra && (
+            <button
+              onClick={onToggle}
+              className="text-[11px] text-sky-400 font-medium mt-1 hover:text-sky-600 transition-colors"
+            >
+              {expanded ? "▲ 閉じる" : "▼ 詳細を見る"}
+            </button>
+          )}
+          {expanded && (
+            <div className="mt-2 space-y-2">
+              {item.photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.photoUrl}
+                  alt={item.name}
+                  className="w-full rounded-2xl object-cover max-h-48"
+                />
+              )}
+              {item.memo && (
+                <p className="text-xs text-slate-500 leading-relaxed whitespace-pre-wrap">
+                  {item.memo}
+                </p>
+              )}
+              {item.mapUrl && (
+                <a
+                  href={item.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
+                >
+                  📍 地図を開く
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditCard({
+  item,
+  onUpdate,
+  onDelete,
+}: {
+  item: Item;
+  onUpdate: (updated: Item) => void;
+  onDelete: () => void;
+}) {
+  const [draft, setDraft] = useState<Item>(item);
+  const [showOptional, setShowOptional] = useState(
+    !!(item.memo || item.photoUrl || item.mapUrl || item.transport)
+  );
+
+  const update = (patch: Partial<Item>) => {
+    const updated = { ...draft, ...patch };
+    setDraft(updated);
+    onUpdate(updated);
+  };
+
+  return (
+    <div className="bg-white border-2 border-sky-300 rounded-3xl p-5 shadow-lg space-y-3">
+      {/* 時間 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">開始</label>
+          <input
+            type="time"
+            value={draft.startTime}
+            onChange={(e) => update({ startTime: e.target.value })}
+            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">終了</label>
+          <input
+            type="time"
+            value={draft.endTime ?? ""}
+            onChange={(e) => update({ endTime: e.target.value || undefined })}
+            className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+        </div>
+      </div>
+
+      {/* イベント名 */}
+      <input
+        type="text"
+        value={draft.name}
+        onChange={(e) => update({ name: e.target.value })}
+        placeholder="イベント名（例：清水寺を観光）"
+        className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-slate-700 font-bold focus:outline-none focus:border-sky-300 bg-slate-50"
+      />
+
+      {/* オプション展開 */}
+      <button
+        type="button"
+        onClick={() => setShowOptional((v) => !v)}
+        className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors font-medium"
+      >
+        {showOptional ? "▲ オプションを閉じる" : "▼ メモ・写真・地図・移動情報を追加"}
+      </button>
+
+      {showOptional && (
+        <div className="space-y-3 pt-1">
+          {/* メモ */}
+          <textarea
+            value={draft.memo ?? ""}
+            onChange={(e) => update({ memo: e.target.value || undefined })}
+            placeholder="メモ（任意）"
+            rows={2}
+            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+          {/* 写真URL */}
+          <input
+            type="url"
+            value={draft.photoUrl ?? ""}
+            onChange={(e) => update({ photoUrl: e.target.value || undefined })}
+            placeholder="写真URL（任意）"
+            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+          {/* 地図URL */}
+          <input
+            type="url"
+            value={draft.mapUrl ?? ""}
+            onChange={(e) => update({ mapUrl: e.target.value || undefined })}
+            placeholder="地図URL（Google Maps等、任意）"
+            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+          />
+          {/* 移動情報 */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+              次のコマへの移動
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={draft.transport?.mode ?? ""}
+                onChange={(e) => {
+                  const mode = e.target.value as TransportMode;
+                  update({
+                    transport: mode
+                      ? { mode, duration: draft.transport?.duration }
+                      : undefined,
+                  });
+                }}
+                className="border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+              >
+                <option value="">なし</option>
+                {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+              {draft.transport && (
+                <input
+                  type="text"
+                  value={draft.transport.duration ?? ""}
+                  onChange={(e) =>
+                    update({
+                      transport: {
+                        ...draft.transport!,
+                        duration: e.target.value || undefined,
+                      },
+                    })
+                  }
+                  placeholder="所要時間（例：約15分）"
+                  className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 削除 */}
+      <div className="flex justify-end pt-1">
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium"
+        >
+          このコマを削除
+        </button>
+      </div>
+    </div>
+  );
+}

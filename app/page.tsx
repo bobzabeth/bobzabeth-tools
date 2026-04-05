@@ -18,19 +18,19 @@ const TOOLS = [
     border: "border-emerald-100",
     tagColor: "bg-emerald-100 text-emerald-700",
   },
+  {
+    id: "plan",
+    emoji: "✈️",
+    name: "旅程メーカー",
+    desc: "旅の流れをかんたんにまとめて、タイムライン形式でシェアできるよ。旅行前に作って友達に送ろう！",
+    tags: ["旅行", "スケジュール", "シェア"],
+    url: "/plan",
+    color: "from-sky-400 to-blue-500",
+    bg: "bg-sky-50",
+    border: "border-sky-100",
+    tagColor: "bg-sky-100 text-sky-700",
+  },
   // 今後のツールはここに追加してね👇
-  // {
-  //   id: "tool2",
-  //   emoji: "🔧",
-  //   name: "ツール名",
-  //   desc: "説明文",
-  //   tags: ["タグ"],
-  //   url: "/",
-  //   color: "from-blue-400 to-indigo-500",
-  //   bg: "bg-blue-50",
-  //   border: "border-blue-100",
-  //   tagColor: "bg-blue-100 text-blue-700",
-  // },
 ];
 
 export default function HomePage() {
