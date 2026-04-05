@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Item } from "../types";
 
 type ViewProps = {
@@ -89,6 +89,14 @@ function EditCard({
 }) {
   const [draft, setDraft] = useState<Item>(item);
   const [showOptional, setShowOptional] = useState(!!(item.memo || item.mapUrl));
+  const isNew = item.name === "";
+  const startTimeRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  // 新規コマのとき開始時間にauto-focus
+  useEffect(() => {
+    if (isNew) startTimeRef.current?.focus();
+  }, [isNew]);
 
   const update = (patch: Partial<Item>) => {
     const updated = { ...draft, ...patch };
@@ -114,9 +122,11 @@ function EditCard({
         <div className="flex items-center gap-1.5">
           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">開始</label>
           <input
+            ref={startTimeRef}
             type="time"
             value={draft.startTime}
             onChange={(e) => update({ startTime: e.target.value })}
+            onBlur={() => { if (isNew) nameRef.current?.focus(); }}
             className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
           />
         </div>
@@ -144,6 +154,7 @@ function EditCard({
 
       {/* イベント名 */}
       <input
+        ref={nameRef}
         type="text"
         value={draft.name}
         onChange={(e) => update({ name: e.target.value })}

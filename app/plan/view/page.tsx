@@ -114,7 +114,7 @@ export default function ViewPage() {
         {/* ヘッダー */}
         <div className="mb-4 text-center">
           <span className="inline-block bg-sky-100 text-sky-600 text-xs font-bold px-3 py-1 rounded-full tracking-wide">
-            旅程メーカー
+            おでかけプランナー
           </span>
         </div>
 

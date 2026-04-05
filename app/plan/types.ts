@@ -1,4 +1,4 @@
-export type TransportMode = "walk" | "train" | "car" | "bus" | "other";
+export type TransportMode = "walk" | "train" | "car" | "bus" | "plane" | "bike" | "motorcycle" | "other";
 
 export type Transport = {
   mode: TransportMode;

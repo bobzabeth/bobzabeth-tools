@@ -4,7 +4,7 @@ import { forwardRef, useState } from "react";
 import type { Itinerary, Item, TransportMode } from "../types";
 import TimelineCard from "./TimelineCard";
 import TransportBadge from "./TransportBadge";
-import { formatDate, sortItemsByTime, TRANSPORT_LABELS } from "../utils";
+import { formatDate, sortItemsByTime, TRANSPORT_ICONS } from "../utils";
 
 type Props = {
   itinerary: Itinerary;
@@ -158,17 +158,23 @@ function TransportEditor({
   return (
     <div className="mx-2 bg-sky-50 border-2 border-sky-200 rounded-2xl px-4 py-3 space-y-3">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">移動情報</p>
-      {/* 1行目：移動手段 */}
-      <select
-        value={mode}
-        onChange={(e) => setMode(e.target.value as TransportMode | "")}
-        className="w-full border-2 border-slate-100 rounded-xl px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
-      >
-        <option value="">手段を選ぶ</option>
-        {Object.entries(TRANSPORT_LABELS).map(([k, v]) => (
-          <option key={k} value={k}>{v}</option>
+      {/* 1行目：移動手段アイコンラジオ */}
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(TRANSPORT_ICONS).map(([k, icon]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setMode(mode === k ? "" : k as TransportMode)}
+            className={`w-10 h-10 rounded-full text-xl flex items-center justify-center border-2 transition-all ${
+              mode === k
+                ? "border-sky-400 bg-sky-100"
+                : "border-slate-100 bg-white hover:border-sky-200 hover:bg-sky-50"
+            }`}
+          >
+            {icon}
+          </button>
         ))}
-      </select>
+      </div>
       {/* 2行目：最速 ～ 最遅 ＋ 単位スイッチ */}
       <div className="flex items-center gap-2">
         <input

@@ -41,12 +41,15 @@ export function formatDate(dateStr: string): string {
   });
 }
 
-export const TRANSPORT_LABELS: Record<string, string> = {
-  walk: "🚶 徒歩",
-  train: "🚃 電車",
-  car: "🚗 車",
-  bus: "🚌 バス",
-  other: "🔄 移動",
+export const TRANSPORT_ICONS: Record<string, string> = {
+  walk: "🚶",
+  train: "🚃",
+  car: "🚗",
+  bus: "🚌",
+  plane: "✈️",
+  bike: "🚲",
+  motorcycle: "🏍️",
+  other: "🔄",
 };
 
 const STORAGE_KEY = "itinerary_draft";
