@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Item, Itinerary } from "./types";
 import {
   loadDraft,
@@ -31,6 +32,7 @@ function newItem(): Item {
 type MyPlan = { code: string; title: string; date: string };
 
 export default function PlanPage() {
+  const router = useRouter();
   const [itinerary, setItinerary] = useState<Itinerary>(DEFAULT_ITINERARY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
@@ -39,12 +41,11 @@ export default function PlanPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [myPlans, setMyPlans] = useState<MyPlan[]>([]);
 
-  // シェアモーダル
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [sharePassword, setSharePassword] = useState("");
-  const [sharing, setSharing] = useState(false);
-  const [shareMsg, setShareMsg] = useState("");
-  const [shareForLine, setShareForLine] = useState(false);
+  // 保存モーダル
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savePassword, setSavePassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -61,8 +62,15 @@ export default function PlanPage() {
   useEffect(() => {
     const codes = getMyPlanCodes();
     if (codes.length === 0) return;
-    Promise.all(codes.map((code) => loadPlanFromDb(code).then((r) => r ? { code, title: r.data.title, date: r.data.date } : null)))
-      .then((results) => setMyPlans(results.filter((r): r is MyPlan => r !== null)));
+    Promise.all(
+      codes.map((code) =>
+        loadPlanFromDb(code).then((r) =>
+          r ? { code, title: r.data.title, date: r.data.date } : null
+        )
+      )
+    ).then((results) =>
+      setMyPlans(results.filter((r): r is MyPlan => r !== null))
+    );
   }, []);
 
   const updateItem = useCallback((updated: Item) => {
@@ -94,38 +102,19 @@ export default function PlanPage() {
     setNewItemId(item.id);
   };
 
-  const openShareModal = (forLine = false) => {
-    setShareForLine(forLine);
-    setSharePassword("");
-    setShareMsg("");
-    setShowShareModal(true);
-  };
-
-  const handleShareSave = async () => {
-    setSharing(true);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError("");
     try {
-      const code = await savePlanToDb(itinerary, sharePassword || undefined);
+      const code = await savePlanToDb(itinerary, savePassword || undefined);
       addMyPlanCode(code);
-      // マイプランに追加
-      setMyPlans((prev) => [{ code, title: itinerary.title, date: itinerary.date }, ...prev.filter((p) => p.code !== code)]);
-
-      const url = `${window.location.origin}/plan/${code}`;
-      if (shareForLine) {
-        setShowShareModal(false);
-        window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`, "_blank");
-      } else {
-        try {
-          await navigator.clipboard.writeText(url);
-          setShareMsg("URLをコピーしました！");
-        } catch {
-          setShareMsg(url);
-        }
-        setTimeout(() => { setShowShareModal(false); setShareMsg(""); }, 2000);
-      }
+      // draft をリセット
+      saveDraft(DEFAULT_ITINERARY);
+      router.push(`/plan/${code}/edit`);
     } catch {
-      setShareMsg("保存に失敗しました");
+      setSaveError("保存に失敗しました。もう一度お試しください。");
     } finally {
-      setSharing(false);
+      setSaving(false);
     }
   };
 
@@ -163,7 +152,7 @@ export default function PlanPage() {
     setMyPlans((prev) => prev.filter((p) => p.code !== code));
   };
 
-  const canShare = !!itinerary.title && itinerary.items.length > 0;
+  const canSave = !!itinerary.title && itinerary.items.length > 0;
 
   return (
     <main className="min-h-screen bg-[#FFFBF5] font-sans text-slate-800">
@@ -286,24 +275,18 @@ export default function PlanPage() {
         {/* アクションエリア */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
-            シェア・書き出し
+            保存・書き出し
           </p>
           <button
-            onClick={() => openShareModal(false)}
-            disabled={!canShare}
+            onClick={() => { setSavePassword(""); setSaveError(""); setShowSaveModal(true); }}
+            disabled={!canSave}
             className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            🔗 シェアURLをコピー
+            💾 プランを保存する
           </button>
-          <button
-            onClick={() => openShareModal(true)}
-            disabled={!canShare}
-            style={canShare ? { backgroundColor: "#06C755" } : undefined}
-            className="w-full disabled:opacity-40 disabled:bg-slate-200 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
-          >
-            <span className="font-black">LINE</span>
-            <span>でシェア</span>
-          </button>
+          <p className="text-[11px] text-slate-400 text-center">
+            保存するとシェアURLが発行されます
+          </p>
           <button
             onClick={handleExport}
             disabled={exporting || itinerary.items.length === 0}
@@ -320,17 +303,17 @@ export default function PlanPage() {
           </button>
         </div>
 
-        {/* シェアモーダル */}
-        {showShareModal && (
+        {/* 保存モーダル */}
+        {showSaveModal && (
           <div
             className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowShareModal(false)}
+            onClick={() => setShowSaveModal(false)}
           >
             <div
               className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full p-6 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-base font-black text-slate-800">🔗 プランをシェア</p>
+              <p className="text-base font-black text-slate-800">💾 プランを保存</p>
               <div className="bg-slate-50 rounded-2xl px-4 py-3">
                 <p className="font-bold text-slate-700 text-sm">{itinerary.title}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{itinerary.date} / {itinerary.items.length}コマ</p>
@@ -341,28 +324,28 @@ export default function PlanPage() {
                 </label>
                 <input
                   type="password"
-                  value={sharePassword}
-                  onChange={(e) => setSharePassword(e.target.value)}
-                  placeholder="設定しない場合はURL共有で誰でも編集可"
+                  value={savePassword}
+                  onChange={(e) => setSavePassword(e.target.value)}
+                  placeholder="設定しない場合はURLを知る人が編集可"
                   className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-white"
                 />
               </div>
-              {shareMsg && (
-                <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>
+              {saveError && (
+                <p className="text-xs text-center text-red-400">{saveError}</p>
               )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowShareModal(false)}
+                  onClick={() => setShowSaveModal(false)}
                   className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all"
                 >
                   キャンセル
                 </button>
                 <button
-                  onClick={handleShareSave}
-                  disabled={sharing}
+                  onClick={handleSave}
+                  disabled={saving}
                   className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg transition-all active:scale-95 disabled:opacity-60"
                 >
-                  {sharing ? "保存中..." : shareForLine ? "LINEでシェア" : "URLをコピー"}
+                  {saving ? "保存中..." : "保存する"}
                 </button>
               </div>
             </div>
