@@ -52,6 +52,25 @@ export const TRANSPORT_ICONS: Record<string, string> = {
   other: "🔄",
 };
 
+export function extractGoogleMapsName(url: string): string | null {
+  try {
+    // /maps/place/[NAME]/ 形式
+    const placeMatch = url.match(/\/maps\/place\/([^/@?#]+)/);
+    if (placeMatch) {
+      const name = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
+      // 英数字のみ（座標など）は除外
+      if (/[^\x00-\x7F]/.test(name) || /[a-zA-Z]/.test(name.slice(0, 3))) return name;
+    }
+    // ?q= 形式
+    const u = new URL(url);
+    const q = u.searchParams.get("q");
+    if (q && q.trim()) return q.trim();
+  } catch {
+    // 無効なURL
+  }
+  return null;
+}
+
 const STORAGE_KEY = "itinerary_draft";
 
 export function saveDraft(itinerary: Itinerary): void {

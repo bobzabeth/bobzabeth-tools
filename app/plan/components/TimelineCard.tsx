@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Item } from "../types";
+import { extractGoogleMapsName } from "../utils";
 
 type ViewProps = {
   item: Item;
@@ -66,7 +67,7 @@ function ViewCard({ item }: { item: Item }) {
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 font-medium"
               >
-                📍 地図を開く
+                📍 {extractGoogleMapsName(item.mapUrl) ?? "地図を開く"}
               </a>
             )}
           </div>

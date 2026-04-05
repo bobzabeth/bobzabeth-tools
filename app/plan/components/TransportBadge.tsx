@@ -19,23 +19,24 @@ function formatDurationRange(transport: Transport): string | null {
 export default function TransportBadge({ transport }: Props) {
   const icon = TRANSPORT_ICONS[transport.mode] ?? "🔄";
   const durationText = formatDurationRange(transport);
+
   return (
-    <div className="py-1 px-4 space-y-1">
-      <div className="flex items-center gap-2">
-        <div className="w-0.5 h-4 bg-sky-200" />
-        <div className="flex items-center gap-1.5 bg-sky-50 border border-sky-100 rounded-full px-3 py-1 text-xs text-sky-600 font-medium">
-          <span>{icon}</span>
-          {durationText && (
-            <>
-              <span className="text-sky-300">·</span>
-              <span>{durationText}</span>
-            </>
-          )}
+    <div className="flex items-start gap-2 py-1 px-4">
+      <div className="w-0.5 self-stretch bg-sky-200 mt-1" />
+      <div className="bg-sky-50 border border-sky-100 rounded-2xl px-3 py-2 text-xs text-sky-600 font-medium">
+        {/* 1行目：アイコン + 移動時間 */}
+        <div className="flex items-center gap-1.5">
+          <span className="flex-shrink-0">{icon}</span>
+          {durationText && <span>{durationText}</span>}
         </div>
+        {/* 2行目：メモ（アイコン分インデント） */}
+        {transport.memo && (
+          <div className="flex items-start gap-1.5 mt-1">
+            <span className="flex-shrink-0 opacity-0 select-none">{icon}</span>
+            <p className="leading-relaxed text-sky-500">{transport.memo}</p>
+          </div>
+        )}
       </div>
-      {transport.memo && (
-        <p className="text-xs text-slate-400 pl-7 leading-relaxed">{transport.memo}</p>
-      )}
     </div>
   );
 }
