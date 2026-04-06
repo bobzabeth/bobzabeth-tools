@@ -379,10 +379,17 @@ export default function PlanEditPage() {
           </div>
         )}
 
-        <footer className="text-center text-xs text-slate-300 pb-4">
-          <a href="/" className="hover:text-sky-400 transition-colors">
-            ← ツール一覧に戻る
-          </a>
+        <footer className="text-center text-xs text-slate-300 pb-4 space-y-1">
+          <div>
+            <a href="/plan" className="hover:text-sky-400 transition-colors">
+              ← マイおでかけ一覧に戻る
+            </a>
+          </div>
+          <div>
+            <a href="/" className="hover:text-sky-400 transition-colors">
+              ← ツール一覧に戻る
+            </a>
+          </div>
         </footer>
       </div>
     </main>

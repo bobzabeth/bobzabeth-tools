@@ -71,18 +71,18 @@ export default function PlanPage() {
               作成中...
             </>
           ) : (
-            "＋ 新しいプランを作る"
+            "＋ 新規おでかけ"
           )}
         </button>
 
         {/* マイプラン一覧 */}
         {plans.length > 0 && (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイプラン</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイおでかけ</p>
             {plans.map((plan) => (
               <div key={plan.code} className="flex items-center gap-3 group">
                 <a
-                  href={`/plan/${plan.code}/edit`}
+                  href={`/plan/${plan.code}`}
                   className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
                 >
                   <p className="font-bold text-slate-700 text-sm truncate">
@@ -104,7 +104,7 @@ export default function PlanPage() {
 
         {plans.length === 0 && (
           <div className="text-center py-8 text-slate-300 text-sm">
-            まだプランがありません
+            まだおでかけがありません
           </div>
         )}
 
