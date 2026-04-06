@@ -141,7 +141,7 @@ export default function PlanEditPage() {
 
   const addDay = () => {
     if (!itinerary) return;
-    const lastDate = itinerary.days[itinerary.days.length - 1]?.date ?? new Date().toISOString().slice(0, 10);
+    const lastDate = itinerary.days[itinerary.days.length - 1]?.date || new Date().toISOString().slice(0, 10);
     const newDate = addDays(lastDate, 1);
     const newDays = [...itinerary.days, { date: newDate, items: [] }];
     const next = { ...itinerary, days: newDays };
@@ -287,26 +287,23 @@ export default function PlanEditPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">日程</p>
           <div className="space-y-2">
             {itinerary.days.map((day, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <div key={i} className="flex items-center gap-2">
                 <button
                   onClick={() => { setSelectedDay(i); setEditingId(null); }}
-                  className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                  className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
                     selectedDay === i
-                      ? "border-sky-400 bg-sky-50 shadow-sm"
-                      : "border-slate-100 bg-slate-50 hover:border-sky-200"
+                      ? "bg-sky-500 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
                   }`}
                 >
-                  <span className={`text-sm font-black w-10 flex-shrink-0 ${selectedDay === i ? "text-sky-500" : "text-slate-400"}`}>
-                    {i + 1}日目
-                  </span>
-                  <input
-                    type="date"
-                    value={day.date}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => { e.stopPropagation(); updateDayDate(i, e.target.value); }}
-                    className={`flex-1 bg-transparent text-sm focus:outline-none ${selectedDay === i ? "text-sky-600 font-bold" : "text-slate-400"}`}
-                  />
+                  {i + 1}日目
                 </button>
+                <input
+                  type="date"
+                  value={day.date}
+                  onChange={(e) => updateDayDate(i, e.target.value)}
+                  className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-sky-300 bg-slate-50"
+                />
                 {itinerary.days.length > 1 && (
                   <button
                     onClick={() => removeDay(i)}
