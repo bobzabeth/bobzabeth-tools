@@ -18,10 +18,17 @@ function newItem(baseTime?: string): Item {
   return { id: crypto.randomUUID(), startTime: baseTime ?? "09:00", name: "" };
 }
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return localDateStr(d);
 }
 
 export default function PlanEditPage() {
@@ -145,7 +152,7 @@ export default function PlanEditPage() {
 
   const addDay = () => {
     if (!itinerary) return;
-    const lastDate = itinerary.days[itinerary.days.length - 1]?.date || new Date().toISOString().slice(0, 10);
+    const lastDate = itinerary.days[itinerary.days.length - 1]?.date || localDateStr(new Date());
     const newDate = addDays(lastDate, 1);
     const newDays = [...itinerary.days, { date: newDate, items: [] }];
     const next = { ...itinerary, days: newDays };
@@ -257,7 +264,8 @@ export default function PlanEditPage() {
     </main>
   );
 
-  const currentDay = itinerary.days[selectedDay] ?? itinerary.days[0];
+  const safeDay = Math.min(selectedDay, itinerary.days.length - 1);
+  const currentDay = itinerary.days[safeDay] ?? itinerary.days[0];
   const dayView = { title: itinerary.title, date: currentDay.date, items: currentDay.items };
 
   return (
@@ -271,11 +279,17 @@ export default function PlanEditPage() {
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
         {/* ヘッダー */}
-        <div className="px-2 pt-2 flex items-center justify-between">
-          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">おでかけプランナー</a>
-          <span className="text-xs text-slate-400 min-w-[60px] text-right">
-            {saveStatus === "saving" ? "保存中..." : saveStatus === "saved" ? "✓ 保存済み" : ""}
-          </span>
+        <div className="px-2 pt-2 flex items-center justify-between gap-2">
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity flex-shrink-0">おでかけプランナー</a>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-xs text-slate-400">
+              {saveStatus === "saving" ? "保存中..." : saveStatus === "saved" ? "✓ 保存済み" : ""}
+            </span>
+            <a href={`/plan/${code}`}
+              className="flex-shrink-0 border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold px-3 py-1.5 rounded-2xl transition-all text-xs bg-white/80 backdrop-blur-sm shadow-sm">
+              👁 閲覧
+            </a>
+          </div>
         </div>
 
         {/* タイトル */}
@@ -341,7 +355,7 @@ export default function PlanEditPage() {
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-            {selectedDay + 1}日目のタイムライン — {currentDay.items.length}コマ
+            {safeDay + 1}日目のタイムライン — {currentDay.items.length}コマ
           </p>
           <TimelineView
             ref={timelineRef}

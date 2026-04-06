@@ -135,17 +135,6 @@ function EditCard({
 
   return (
     <div className="bg-white border-2 border-sky-300 rounded-3xl p-5 shadow-lg space-y-3">
-      {/* 完了ボタン */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
-        >
-          完了
-        </button>
-      </div>
-
       {/* 1行目：開始時間 */}
       <div className="flex items-center gap-1.5">
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14">開始時間</label>
@@ -243,14 +232,21 @@ function EditCard({
         </div>
       )}
 
-      {/* 削除 */}
-      <div className="flex justify-end pt-1">
+      {/* 下部ボタン行：左に削除、右に完了 */}
+      <div className="flex items-center justify-between pt-1">
         <button
           type="button"
           onClick={onDelete}
           className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium"
         >
           このコマを削除
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 rounded-full transition-all active:scale-95"
+        >
+          完了
         </button>
       </div>
     </div>
