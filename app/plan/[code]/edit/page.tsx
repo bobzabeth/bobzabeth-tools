@@ -282,45 +282,51 @@ export default function PlanEditPage() {
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 font-bold text-lg focus:outline-none focus:border-sky-300 bg-slate-50" />
         </div>
 
-        {/* タイムライン（日別タブ） */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          {/* タブバー */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+        {/* 日付セレクター（独立カード） */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">日程</p>
+          <div className="space-y-2">
             {itinerary.days.map((day, i) => (
-              <div key={i} className="relative flex-shrink-0">
+              <div key={i} className="flex items-center gap-3">
                 <button
                   onClick={() => { setSelectedDay(i); setEditingId(null); }}
-                  className={`px-4 py-2 rounded-2xl text-sm font-bold transition-all ${
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
                     selectedDay === i
-                      ? "bg-sky-500 text-white shadow-md"
-                      : "border-2 border-slate-100 text-slate-400 hover:border-sky-200 hover:text-sky-500"
+                      ? "border-sky-400 bg-sky-50 shadow-sm"
+                      : "border-slate-100 bg-slate-50 hover:border-sky-200"
                   }`}
                 >
-                  {i + 1}日目
-                  {day.date && <span className="ml-1 text-xs opacity-75">{day.date.slice(5).replace("-", "/")}</span>}
+                  <span className={`text-sm font-black w-10 flex-shrink-0 ${selectedDay === i ? "text-sky-500" : "text-slate-400"}`}>
+                    {i + 1}日目
+                  </span>
+                  <input
+                    type="date"
+                    value={day.date}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); updateDayDate(i, e.target.value); }}
+                    className={`flex-1 bg-transparent text-sm focus:outline-none ${selectedDay === i ? "text-sky-600 font-bold" : "text-slate-400"}`}
+                  />
                 </button>
                 {itinerary.days.length > 1 && (
                   <button
                     onClick={() => removeDay(i)}
-                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-200 hover:bg-red-400 text-white text-[10px] flex items-center justify-center leading-none transition-colors"
+                    className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg"
                   >×</button>
                 )}
               </div>
             ))}
-            <button
-              onClick={addDay}
-              className="flex-shrink-0 px-3 py-2 rounded-2xl border-2 border-dashed border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-600 text-sm font-bold transition-all"
-            >＋ 日を追加</button>
           </div>
+          <button
+            onClick={addDay}
+            className="mt-3 w-full border-2 border-dashed border-sky-200 rounded-2xl py-2.5 text-sky-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-bold"
+          >＋ 日を追加</button>
+        </div>
 
-          {/* 日付入力 */}
-          <div className="mb-4">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">日付</label>
-            <input type="date" value={currentDay.date}
-              onChange={(e) => updateDayDate(selectedDay, e.target.value)}
-              className="border-2 border-slate-100 rounded-2xl px-4 py-2 text-slate-700 text-sm focus:outline-none focus:border-sky-300 bg-slate-50" />
-          </div>
-
+        {/* タイムライン */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+            {selectedDay + 1}日目のタイムライン — {currentDay.items.length}コマ
+          </p>
           <TimelineView
             ref={timelineRef}
             itinerary={dayView}

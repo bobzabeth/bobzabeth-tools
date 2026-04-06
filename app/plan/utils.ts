@@ -26,7 +26,7 @@ export function generateShareUrl(itinerary: Itinerary): string {
   return `${base}?d=${encoded}`;
 }
 
-export function sortItemsByTime(items: Itinerary["items"]): Itinerary["items"] {
+export function sortItemsByTime(items: import("./types").Item[]): import("./types").Item[] {
   return [...items].sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 

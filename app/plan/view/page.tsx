@@ -44,7 +44,7 @@ function ViewContent() {
   const handleDownload = () => {
     if (!previewUrl) return;
     const link = document.createElement("a");
-    link.download = `${itinerary.title || "おでかけ"}_${itinerary.date}.png`;
+    link.download = `${itinerary.title || "おでかけ"}.png`;
     link.href = previewUrl;
     link.click();
   };
@@ -68,7 +68,7 @@ function ViewContent() {
     <div className="space-y-4">
       {/* タイムライン */}
       <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-        <TimelineView ref={timelineRef} itinerary={itinerary} />
+        <TimelineView ref={timelineRef} itinerary={itinerary as unknown as { title: string; date: string; items: import("../types").Item[] }} />
       </div>
 
       {/* アクションエリア */}
