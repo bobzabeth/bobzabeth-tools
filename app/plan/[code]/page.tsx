@@ -88,7 +88,7 @@ export default function PlanViewPage() {
 
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-6 py-3 text-center">
+        <div className="px-2 pt-2 text-center">
           <span className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight">おでかけプランナー</span>
         </div>
 
