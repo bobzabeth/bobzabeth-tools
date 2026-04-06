@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import type { Item, Itinerary } from "../../types";
+import type { Day, Item, Itinerary } from "../../types";
 import {
   loadPlanFromDb,
   updatePlanInDb,
@@ -13,12 +13,14 @@ import {
 } from "../../utils";
 import TimelineView from "../../components/TimelineView";
 
-function newItem(): Item {
-  return {
-    id: crypto.randomUUID(),
-    startTime: "09:00",
-    name: "",
-  };
+function newItem(baseTime?: string): Item {
+  return { id: crypto.randomUUID(), startTime: baseTime ?? "09:00", name: "" };
+}
+
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function PlanEditPage() {
@@ -29,36 +31,28 @@ export default function PlanEditPage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "">("");
   const [exporting, setExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState("");
-  // パスワード設定UI
   const [showPwSection, setShowPwSection] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
   const timelineRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const sessionKey = `plan_pw_${code}`;
 
   useEffect(() => {
     loadPlanFromDb(code).then((result) => {
-      if (!result) {
-        setError(true);
-        return;
-      }
+      if (!result) { setError(true); return; }
       setItinerary(result.data);
       if (result.hasPassword) {
         const saved = sessionStorage.getItem(sessionKey);
-        if (saved) {
-          setPasswordInput(saved);
-          setUnlocked(true);
-        } else {
-          setHasPassword(true);
-        }
+        if (saved) { setPasswordInput(saved); setUnlocked(true); }
+        else setHasPassword(true);
       } else {
         setUnlocked(true);
       }
@@ -67,82 +61,86 @@ export default function PlanEditPage() {
 
   const handlePasswordSubmit = async () => {
     const ok = await verifyPlanPassword(code, passwordInput);
-    if (ok) {
-      sessionStorage.setItem(sessionKey, passwordInput);
-      setHasPassword(false);
-      setUnlocked(true);
-    } else {
-      setPasswordError(true);
-    }
+    if (ok) { sessionStorage.setItem(sessionKey, passwordInput); setHasPassword(false); setUnlocked(true); }
+    else setPasswordError(true);
   };
 
-  const saveToDb = useCallback(
-    (updated: Itinerary) => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      setSaveStatus("saving");
-      updateMyPlanMeta(code, updated.title, updated.date);
-      saveTimer.current = setTimeout(async () => {
-        const pw = sessionStorage.getItem(sessionKey) || undefined;
-        const ok = await updatePlanInDb(code, updated, pw);
-        setSaveStatus(ok ? "saved" : "");
-        if (ok) setTimeout(() => setSaveStatus(""), 2000);
-      }, 1000);
-    },
-    [code, sessionKey]
-  );
+  const saveToDb = useCallback((updated: Itinerary) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveStatus("saving");
+    updateMyPlanMeta(code, updated.title, updated.days[0]?.date ?? "");
+    saveTimer.current = setTimeout(async () => {
+      const pw = sessionStorage.getItem(sessionKey) || undefined;
+      const ok = await updatePlanInDb(code, updated, pw);
+      setSaveStatus(ok ? "saved" : "");
+      if (ok) setTimeout(() => setSaveStatus(""), 2000);
+    }, 1000);
+  }, [code, sessionKey]);
 
-  const updateItem = useCallback(
-    (updated: Item) => {
-      setItinerary((prev) => {
-        if (!prev) return prev;
-        const next = {
-          ...prev,
-          items: prev.items.map((it) => (it.id === updated.id ? updated : it)),
-        };
-        saveToDb(next);
-        return next;
-      });
-    },
-    [saveToDb]
-  );
-
-  const deleteItem = useCallback(
-    (id: string) => {
-      setItinerary((prev) => {
-        if (!prev) return prev;
-        const next = { ...prev, items: prev.items.filter((it) => it.id !== id) };
-        saveToDb(next);
-        return next;
-      });
-      setEditingId(null);
-    },
-    [saveToDb]
-  );
-
-  const addItem = () => {
-    if (!itinerary) return;
-    const item = newItem();
-    const sorted = sortItemsByTime(itinerary.items);
-    if (sorted.length > 0) {
-      const last = sorted[sorted.length - 1];
-      const [h, m] = (last.endTime ?? last.startTime).split(":").map(Number);
-      const nextH = Math.min(h + 1, 23);
-      item.startTime = `${String(nextH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    }
+  const updateDays = useCallback((updater: (days: Day[]) => Day[]) => {
     setItinerary((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, items: [...prev.items, item] };
+      const next = { ...prev, days: updater(prev.days) };
       saveToDb(next);
       return next;
     });
+  }, [saveToDb]);
+
+  const updateItem = useCallback((updated: Item) => {
+    updateDays((days) => days.map((d, i) =>
+      i === selectedDay ? { ...d, items: d.items.map((it) => it.id === updated.id ? updated : it) } : d
+    ));
+  }, [updateDays, selectedDay]);
+
+  const deleteItem = useCallback((id: string) => {
+    updateDays((days) => days.map((d, i) =>
+      i === selectedDay ? { ...d, items: d.items.filter((it) => it.id !== id) } : d
+    ));
+    setEditingId(null);
+  }, [updateDays, selectedDay]);
+
+  const addItem = () => {
+    if (!itinerary) return;
+    const currentItems = itinerary.days[selectedDay]?.items ?? [];
+    const sorted = sortItemsByTime(currentItems);
+    let startTime = "09:00";
+    if (sorted.length > 0) {
+      const last = sorted[sorted.length - 1];
+      const [h, m] = (last.endTime ?? last.startTime).split(":").map(Number);
+      startTime = `${String(Math.min(h + 1, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+    const item = newItem(startTime);
+    updateDays((days) => days.map((d, i) =>
+      i === selectedDay ? { ...d, items: [...d.items, item] } : d
+    ));
     setEditingId(item.id);
     setNewItemId(item.id);
   };
 
-  const updateMeta = (patch: Partial<Itinerary>) => {
+  const addDay = () => {
+    if (!itinerary) return;
+    const lastDate = itinerary.days[itinerary.days.length - 1]?.date ?? new Date().toISOString().slice(0, 10);
+    const newDate = addDays(lastDate, 1);
+    updateDays((days) => [...days, { date: newDate, items: [] }]);
+    setSelectedDay(itinerary.days.length);
+    setEditingId(null);
+  };
+
+  const removeDay = (index: number) => {
+    if (!itinerary || itinerary.days.length <= 1) return;
+    updateDays((days) => days.filter((_, i) => i !== index));
+    setSelectedDay((prev) => Math.min(prev, itinerary.days.length - 2));
+    setEditingId(null);
+  };
+
+  const updateDayDate = (index: number, date: string) => {
+    updateDays((days) => days.map((d, i) => i === index ? { ...d, date } : d));
+  };
+
+  const updateTitle = (title: string) => {
     setItinerary((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, ...patch };
+      const next = { ...prev, title };
       saveToDb(next);
       return next;
     });
@@ -151,50 +149,18 @@ export default function PlanEditPage() {
   const shareUrl = `${window.location.origin}/plan/${code}`;
 
   const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareMsg("URLをコピーしました！");
-    } catch {
-      setShareMsg(shareUrl);
-    }
+    try { await navigator.clipboard.writeText(shareUrl); setShareMsg("URLをコピーしました！"); }
+    catch { setShareMsg(shareUrl); }
     setTimeout(() => setShareMsg(""), 3000);
   };
 
   const handleLineShare = () => {
-    window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`,
-      "_blank"
-    );
+    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, "_blank");
   };
 
   const handleXShare = () => {
     const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
-    const toolUrl = `${window.location.origin}/plan`;
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(toolUrl)}`,
-      "_blank"
-    );
-  };
-
-  const handlePasswordSave = async (remove = false) => {
-    setPwStatus("saving");
-    const currentPw = sessionStorage.getItem(sessionKey) || undefined;
-    const ok = await changePassword(code, currentPw, remove ? null : newPw);
-    if (ok) {
-      if (remove) {
-        sessionStorage.removeItem(sessionKey);
-        setHasPassword(false);
-      } else {
-        sessionStorage.setItem(sessionKey, newPw);
-        setHasPassword(true);
-        setPasswordInput(newPw);
-      }
-      setNewPw("");
-      setPwStatus("saved");
-      setTimeout(() => { setPwStatus(""); setShowPwSection(false); }, 1500);
-    } else {
-      setPwStatus("error");
-    }
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`${window.location.origin}/plan`)}`, "_blank");
   };
 
   const handleExport = async () => {
@@ -202,79 +168,68 @@ export default function PlanEditPage() {
     setExporting(true);
     try {
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(timelineRef.current, {
-        backgroundColor: "#FFFBF5",
-        pixelRatio: 2,
-      });
-      setPreviewUrl(dataUrl);
-    } finally {
-      setExporting(false);
-    }
+      setPreviewUrl(await toPng(timelineRef.current, { backgroundColor: "#FFFBF5", pixelRatio: 2 }));
+    } finally { setExporting(false); }
   };
 
   const handleDownload = () => {
     if (!previewUrl || !itinerary) return;
     const link = document.createElement("a");
-    link.download = `${itinerary.title || "おでかけ"}_${itinerary.date}.png`;
+    link.download = `${itinerary.title || "おでかけ"}.png`;
     link.href = previewUrl;
     link.click();
   };
 
-  if (error) {
-    return (
-      <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <p className="text-5xl">🗺️</p>
-          <p className="font-bold text-slate-700">プランが見つかりません</p>
-          <a href="/plan" className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium">
-            ← 新しいプランを作る
-          </a>
-        </div>
-      </main>
-    );
-  }
+  const handlePasswordSave = async (remove = false) => {
+    setPwStatus("saving");
+    const currentPw = sessionStorage.getItem(sessionKey) || undefined;
+    const ok = await changePassword(code, currentPw, remove ? null : newPw);
+    if (ok) {
+      if (remove) { sessionStorage.removeItem(sessionKey); setHasPassword(false); }
+      else { sessionStorage.setItem(sessionKey, newPw); setHasPassword(true); setPasswordInput(newPw); }
+      setNewPw(""); setPwStatus("saved");
+      setTimeout(() => { setPwStatus(""); setShowPwSection(false); }, 1500);
+    } else { setPwStatus("error"); }
+  };
 
-  if (!itinerary) {
-    return (
-      <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-sky-400 border-t-transparent rounded-full" />
-      </main>
-    );
-  }
+  if (error) return (
+    <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center p-8">
+      <div className="text-center space-y-4">
+        <p className="text-5xl">🗺️</p>
+        <p className="font-bold text-slate-700">プランが見つかりません</p>
+        <a href="/plan" className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium">← マイおでかけ一覧へ</a>
+      </div>
+    </main>
+  );
 
-  if (hasPassword && !unlocked) {
-    return (
-      <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center p-8">
-        <div className="bg-white rounded-3xl shadow-xl border border-sky-100 p-8 max-w-sm w-full space-y-4">
-          <p className="text-xl font-black text-slate-800 text-center">🔒 編集パスワード</p>
-          <p className="text-sm text-slate-400 text-center">このプランの編集にはパスワードが必要です。</p>
-          <input
-            type="password"
-            value={passwordInput}
-            onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
-            onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
-            placeholder="パスワードを入力"
-            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-            autoFocus
-          />
-          {passwordError && (
-            <p className="text-xs text-red-400 text-center">パスワードが違います</p>
-          )}
-          <button
-            onClick={handlePasswordSubmit}
-            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl transition-all active:scale-95"
-          >
-            確認
-          </button>
-          <div className="text-center">
-            <a href={`/plan/${code}`} className="text-xs text-slate-400 hover:text-sky-500">
-              閲覧のみで見る
-            </a>
-          </div>
+  if (!itinerary) return (
+    <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center">
+      <div className="animate-spin h-8 w-8 border-4 border-sky-400 border-t-transparent rounded-full" />
+    </main>
+  );
+
+  if (hasPassword && !unlocked) return (
+    <main className="min-h-screen bg-[#FFFBF5] flex items-center justify-center p-8">
+      <div className="bg-white rounded-3xl shadow-xl border border-sky-100 p-8 max-w-sm w-full space-y-4">
+        <p className="text-xl font-black text-slate-800 text-center">🔒 編集パスワード</p>
+        <p className="text-sm text-slate-400 text-center">このプランの編集にはパスワードが必要です。</p>
+        <input type="password" value={passwordInput}
+          onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+          onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
+          placeholder="パスワードを入力"
+          className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50" autoFocus />
+        {passwordError && <p className="text-xs text-red-400 text-center">パスワードが違います</p>}
+        <button onClick={handlePasswordSubmit}
+          className="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl transition-all active:scale-95">確認</button>
+        <div className="text-center">
+          <a href={`/plan/${code}`} className="text-xs text-slate-400 hover:text-sky-500">閲覧のみで見る</a>
         </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  );
+
+  const currentDay = itinerary.days[selectedDay] ?? itinerary.days[0];
+  const dayView = { title: itinerary.title, date: currentDay.date, items: currentDay.items };
 
   return (
     <main className="min-h-screen bg-[#FFFBF5] font-sans text-slate-800">
@@ -285,166 +240,130 @@ export default function PlanEditPage() {
       </div>
 
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
+
+        {/* ヘッダー */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
           <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">
-              おでかけプランナー
-            </span>
+            <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">おでかけプランナー</span>
           </h1>
-          {saveStatus === "saving" && (
-            <p className="text-xs text-slate-400">保存中...</p>
-          )}
-          {saveStatus === "saved" && (
-            <p className="text-xs text-sky-500">✓ 保存しました</p>
-          )}
+          {saveStatus === "saving" && <p className="text-xs text-slate-400">保存中...</p>}
+          {saveStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-4">
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">タイトル</label>
-            <input
-              type="text"
-              value={itinerary.title}
-              onChange={(e) => updateMeta({ title: e.target.value })}
-              placeholder="例：京都旅行 1日目"
-              className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 font-bold text-lg focus:outline-none focus:border-sky-300 bg-slate-50"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">日付</label>
-            <input
-              type="date"
-              value={itinerary.date}
-              onChange={(e) => updateMeta({ date: e.target.value })}
-              className="border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-            />
-          </div>
-        </div>
-
+        {/* タイトル */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              タイムライン — {itinerary.items.length}コマ
-            </p>
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">タイトル</label>
+          <input type="text" value={itinerary.title} onChange={(e) => updateTitle(e.target.value)}
+            placeholder="例：京都旅行"
+            className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 font-bold text-lg focus:outline-none focus:border-sky-300 bg-slate-50" />
+        </div>
+
+        {/* タイムライン（日別タブ） */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
+          {/* タブバー */}
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+            {itinerary.days.map((day, i) => (
+              <div key={i} className="relative flex-shrink-0">
+                <button
+                  onClick={() => { setSelectedDay(i); setEditingId(null); }}
+                  className={`px-4 py-2 rounded-2xl text-sm font-bold transition-all ${
+                    selectedDay === i
+                      ? "bg-sky-500 text-white shadow-md"
+                      : "border-2 border-slate-100 text-slate-400 hover:border-sky-200 hover:text-sky-500"
+                  }`}
+                >
+                  {i + 1}日目
+                  {day.date && <span className="ml-1 text-xs opacity-75">{day.date.slice(5).replace("-", "/")}</span>}
+                </button>
+                {itinerary.days.length > 1 && (
+                  <button
+                    onClick={() => removeDay(i)}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-200 hover:bg-red-400 text-white text-[10px] flex items-center justify-center leading-none transition-colors"
+                  >×</button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={addDay}
+              className="flex-shrink-0 px-3 py-2 rounded-2xl border-2 border-dashed border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-600 text-sm font-bold transition-all"
+            >＋ 日を追加</button>
           </div>
+
+          {/* 日付入力 */}
+          <div className="mb-4">
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">日付</label>
+            <input type="date" value={currentDay.date}
+              onChange={(e) => updateDayDate(selectedDay, e.target.value)}
+              className="border-2 border-slate-100 rounded-2xl px-4 py-2 text-slate-700 text-sm focus:outline-none focus:border-sky-300 bg-slate-50" />
+          </div>
+
           <TimelineView
             ref={timelineRef}
-            itinerary={itinerary}
+            itinerary={dayView}
             editingId={editingId}
             newItemId={newItemId}
             onUpdate={updateItem}
             onDelete={deleteItem}
-            onCardClick={(id) => {
-              setNewItemId(null);
-              setEditingId((prev) => (prev === id ? null : id));
-            }}
+            onCardClick={(id) => { setNewItemId(null); setEditingId((prev) => prev === id ? null : id); }}
             onClose={() => { setNewItemId(null); setEditingId(null); }}
           />
-          <button
-            onClick={addItem}
-            className="mt-4 w-full border-2 border-dashed border-sky-200 rounded-2xl py-3 text-sky-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-bold"
-          >
+          <button onClick={addItem}
+            className="mt-4 w-full border-2 border-dashed border-sky-200 rounded-2xl py-3 text-sky-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-bold">
             ＋ コマを追加
           </button>
         </div>
 
+        {/* シェア・書き出し */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
-            シェア・書き出し
-          </p>
-          {/* LINE */}
-          <button
-            onClick={handleLineShare}
-            style={{ backgroundColor: "#06C755" }}
-            className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg"
-          >
-            <span className="font-black text-base">LINE</span>
-            <span>でシェア</span>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">シェア・書き出し</p>
+          <button onClick={handleLineShare} style={{ backgroundColor: "#06C755" }}
+            className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg">
+            <span className="font-black text-base">LINE</span><span>でシェア</span>
           </button>
-          {/* URL コピー */}
-          <button
-            onClick={handleShare}
-            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
-          >
+          <button onClick={handleShare}
+            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
             🔗 URLをコピー
           </button>
-          {shareMsg && (
-            <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>
-          )}
-          {/* 画像で保存 */}
-          <button
-            onClick={handleExport}
-            disabled={exporting || itinerary.items.length === 0}
-            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 disabled:border-slate-100 disabled:text-slate-300 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
-          >
-            {exporting ? (
-              <>
-                <span className="animate-spin h-4 w-4 border-2 border-sky-400 border-t-transparent rounded-full" />
-                書き出し中...
-              </>
-            ) : (
-              "📷 画像で保存"
-            )}
+          {shareMsg && <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>}
+          <button onClick={handleExport} disabled={exporting || currentDay.items.length === 0}
+            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 disabled:border-slate-100 disabled:text-slate-300 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
+            {exporting ? <><span className="animate-spin h-4 w-4 border-2 border-sky-400 border-t-transparent rounded-full" />書き出し中...</> : "📷 画像で保存"}
           </button>
-          {/* X でシェア */}
-          <button
-            onClick={handleXShare}
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg"
-          >
-            <span className="text-base">𝕏</span>
-            <span>でシェア</span>
+          <button onClick={handleXShare}
+            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg">
+            <span className="text-base">𝕏</span><span>でシェア</span>
           </button>
         </div>
 
         {/* パスワード設定 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          <button
-            onClick={() => setShowPwSection((v) => !v)}
-            className="w-full flex items-center justify-between text-left"
-          >
+          <button onClick={() => setShowPwSection((v) => !v)} className="w-full flex items-center justify-between text-left">
             <div className="flex items-center gap-2">
               <span className="text-base">{hasPassword ? "🔒" : "🔓"}</span>
-              <span className="text-sm font-bold text-slate-600">
-                編集パスワード
-              </span>
-              {hasPassword && (
-                <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-0.5 rounded-full">設定済み</span>
-              )}
+              <span className="text-sm font-bold text-slate-600">編集パスワード</span>
+              {hasPassword && <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-0.5 rounded-full">設定済み</span>}
             </div>
             <span className="text-slate-300 text-sm">{showPwSection ? "▲" : "▼"}</span>
           </button>
-
           {showPwSection && (
             <div className="mt-4 space-y-3">
               <p className="text-xs text-slate-400">
-                {hasPassword
-                  ? "新しいパスワードを入力すると変更できます。削除するとURLを知る人なら誰でも編集できます。"
-                  : "設定するとURLを知っていてもパスワードなしでは編集できません。"}
+                {hasPassword ? "新しいパスワードを入力すると変更できます。削除するとURLを知る人なら誰でも編集できます。" : "設定するとURLを知っていてもパスワードなしでは編集できません。"}
               </p>
-              <input
-                type="password"
-                value={newPw}
-                onChange={(e) => { setNewPw(e.target.value); setPwStatus(""); }}
+              <input type="password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwStatus(""); }}
                 placeholder={hasPassword ? "新しいパスワード" : "パスワードを設定"}
-                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
-              />
+                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50" />
               {pwStatus === "error" && <p className="text-xs text-red-400">保存に失敗しました</p>}
               {pwStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
               <div className="flex gap-2">
                 {hasPassword && (
-                  <button
-                    onClick={() => handlePasswordSave(true)}
-                    disabled={pwStatus === "saving"}
-                    className="flex-1 border-2 border-red-200 text-red-400 hover:border-red-400 font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-50"
-                  >
+                  <button onClick={() => handlePasswordSave(true)} disabled={pwStatus === "saving"}
+                    className="flex-1 border-2 border-red-200 text-red-400 hover:border-red-400 font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-50">
                     パスワードを削除
                   </button>
                 )}
-                <button
-                  onClick={() => handlePasswordSave(false)}
-                  disabled={!newPw || pwStatus === "saving"}
-                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-40"
-                >
+                <button onClick={() => handlePasswordSave(false)} disabled={!newPw || pwStatus === "saving"}
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-40">
                   {pwStatus === "saving" ? "保存中..." : hasPassword ? "変更する" : "設定する"}
                 </button>
               </div>
@@ -453,45 +372,23 @@ export default function PlanEditPage() {
         </div>
 
         {previewUrl && (
-          <div
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-            onClick={() => setPreviewUrl(null)}
-          >
-            <div
-              className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4" onClick={(e) => e.stopPropagation()}>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">プレビュー</p>
               <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
               <div className="flex gap-3">
-                <button
-                  onClick={() => setPreviewUrl(null)}
-                  className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95"
-                >
-                  閉じる
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg shadow-sky-200 transition-all active:scale-95"
-                >
-                  ダウンロード
-                </button>
+                <button onClick={() => setPreviewUrl(null)}
+                  className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95">閉じる</button>
+                <button onClick={handleDownload}
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-lg shadow-sky-200 transition-all active:scale-95">ダウンロード</button>
               </div>
             </div>
           </div>
         )}
 
         <footer className="text-center text-xs text-slate-300 pb-4 space-y-1">
-          <div>
-            <a href="/plan" className="hover:text-sky-400 transition-colors">
-              ← マイおでかけ一覧に戻る
-            </a>
-          </div>
-          <div>
-            <a href="/" className="hover:text-sky-400 transition-colors">
-              ← ツール一覧に戻る
-            </a>
-          </div>
+          <div><a href="/plan" className="hover:text-sky-400 transition-colors">← マイおでかけ一覧に戻る</a></div>
+          <div><a href="/" className="hover:text-sky-400 transition-colors">← ツール一覧に戻る</a></div>
         </footer>
       </div>
     </main>

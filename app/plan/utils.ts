@@ -203,7 +203,10 @@ export function loadDraft(): Itinerary | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Itinerary;
+    const parsed = JSON.parse(raw);
+    // 新形式チェック
+    if (!parsed.title || !Array.isArray(parsed.days)) return null;
+    return parsed as Itinerary;
   } catch {
     return null;
   }

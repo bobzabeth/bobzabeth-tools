@@ -20,8 +20,12 @@ export type Item = {
   transport?: Transport;
 };
 
-export type Itinerary = {
-  title: string;
+export type Day = {
   date: string;
   items: Item[];
+};
+
+export type Itinerary = {
+  title: string;
+  days: Day[];
 };

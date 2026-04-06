@@ -1,13 +1,13 @@
 "use client";
 
 import { forwardRef, useState } from "react";
-import type { Itinerary, Item, TransportMode } from "../types";
+import type { Item, TransportMode } from "../types";
 import TimelineCard from "./TimelineCard";
 import TransportBadge from "./TransportBadge";
 import { formatDate, sortItemsByTime, TRANSPORT_ICONS } from "../utils";
 
 type Props = {
-  itinerary: Itinerary;
+  itinerary: { title: string; date: string; items: Item[] };
   editingId?: string | null;
   newItemId?: string | null;
   onUpdate?: (updated: Item) => void;
