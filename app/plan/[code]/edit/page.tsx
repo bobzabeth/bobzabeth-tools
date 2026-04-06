@@ -8,6 +8,7 @@ import {
   updatePlanInDb,
   verifyPlanPassword,
   sortItemsByTime,
+  updateMyPlanMeta,
 } from "../../utils";
 import TimelineView from "../../components/TimelineView";
 
@@ -74,6 +75,7 @@ export default function PlanEditPage() {
     (updated: Itinerary) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       setSaveStatus("saving");
+      updateMyPlanMeta(code, updated.title, updated.date);
       saveTimer.current = setTimeout(async () => {
         const pw = sessionStorage.getItem(sessionKey) || undefined;
         const ok = await updatePlanInDb(code, updated, pw);

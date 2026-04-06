@@ -124,20 +124,36 @@ export async function verifyPlanPassword(
 
 const MY_PLANS_KEY = "my_plans";
 
-export function getMyPlanCodes(): string[] {
+export type MyPlanMeta = { code: string; title: string; date: string };
+
+export function getMyPlans(): MyPlanMeta[] {
   try {
     const raw = localStorage.getItem(MY_PLANS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as string[];
+    const parsed = JSON.parse(raw);
+    // 旧形式 (string[]) からの移行
+    if (Array.isArray(parsed) && typeof parsed[0] === "string") return [];
+    return parsed as MyPlanMeta[];
   } catch {
     return [];
   }
 }
 
-export function addMyPlanCode(code: string): void {
+export function addMyPlan(code: string, title: string, date: string): void {
   try {
-    const codes = getMyPlanCodes().filter((c) => c !== code);
-    localStorage.setItem(MY_PLANS_KEY, JSON.stringify([code, ...codes]));
+    const plans = getMyPlans().filter((p) => p.code !== code);
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify([{ code, title, date }, ...plans]));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+export function updateMyPlanMeta(code: string, title: string, date: string): void {
+  try {
+    const plans = getMyPlans().map((p) =>
+      p.code === code ? { ...p, title, date } : p
+    );
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify(plans));
   } catch {
     // localStorage unavailable
   }
@@ -145,8 +161,8 @@ export function addMyPlanCode(code: string): void {
 
 export function removeMyPlanCode(code: string): void {
   try {
-    const codes = getMyPlanCodes().filter((c) => c !== code);
-    localStorage.setItem(MY_PLANS_KEY, JSON.stringify(codes));
+    const plans = getMyPlans().filter((p) => p.code !== code);
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify(plans));
   } catch {
     // localStorage unavailable
   }
