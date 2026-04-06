@@ -14,7 +14,7 @@ function generateCode(): string {
 export async function POST(request: Request) {
   const { data, editPassword } = await request.json();
 
-  if (!data || !data.date || !Array.isArray(data.items)) {
+  if (!data || !Array.isArray(data.days)) {
     return Response.json({ error: "Invalid data" }, { status: 400 });
   }
 

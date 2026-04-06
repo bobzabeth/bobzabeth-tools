@@ -43,6 +43,7 @@ export default function PlanEditPage() {
   const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
   const timelineRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialized = useRef(false);
   const sessionKey = `plan_pw_${code}`;
 
   useEffect(() => {
@@ -77,27 +78,42 @@ export default function PlanEditPage() {
     }, 1000);
   }, [code, sessionKey]);
 
-  const updateDays = useCallback((updater: (days: Day[]) => Day[]) => {
+  // アイテム更新・削除はfunctional updaterで（連続呼び出し安全）
+  const updateItem = useCallback((updated: Item) => {
     setItinerary((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, days: updater(prev.days) };
-      saveToDb(next);
-      return next;
+      return {
+        ...prev,
+        days: prev.days.map((d, i) =>
+          i === selectedDay ? { ...d, items: d.items.map((it) => it.id === updated.id ? updated : it) } : d
+        ),
+      };
     });
-  }, [saveToDb]);
-
-  const updateItem = useCallback((updated: Item) => {
-    updateDays((days) => days.map((d, i) =>
-      i === selectedDay ? { ...d, items: d.items.map((it) => it.id === updated.id ? updated : it) } : d
-    ));
-  }, [updateDays, selectedDay]);
+  }, [selectedDay]);
 
   const deleteItem = useCallback((id: string) => {
-    updateDays((days) => days.map((d, i) =>
-      i === selectedDay ? { ...d, items: d.items.filter((it) => it.id !== id) } : d
-    ));
+    setItinerary((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        days: prev.days.map((d, i) =>
+          i === selectedDay ? { ...d, items: d.items.filter((it) => it.id !== id) } : d
+        ),
+      };
+    });
     setEditingId(null);
-  }, [updateDays, selectedDay]);
+  }, [selectedDay]);
+
+  // DB保存は useEffect で itinerary 変化時に行う（DBロード直後はスキップ）
+  useEffect(() => {
+    if (!itinerary || !unlocked) return;
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      return; // 初回ロード時はスキップ
+    }
+    saveToDb(itinerary);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itinerary]);
 
   const addItem = () => {
     if (!itinerary) return;
@@ -110,9 +126,15 @@ export default function PlanEditPage() {
       startTime = `${String(Math.min(h + 1, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     }
     const item = newItem(startTime);
-    updateDays((days) => days.map((d, i) =>
-      i === selectedDay ? { ...d, items: [...d.items, item] } : d
-    ));
+    setItinerary((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        days: prev.days.map((d, i) =>
+          i === selectedDay ? { ...d, items: [...d.items, item] } : d
+        ),
+      };
+    });
     setEditingId(item.id);
     setNewItemId(item.id);
   };
@@ -121,29 +143,31 @@ export default function PlanEditPage() {
     if (!itinerary) return;
     const lastDate = itinerary.days[itinerary.days.length - 1]?.date ?? new Date().toISOString().slice(0, 10);
     const newDate = addDays(lastDate, 1);
-    updateDays((days) => [...days, { date: newDate, items: [] }]);
-    setSelectedDay(itinerary.days.length);
+    const newDays = [...itinerary.days, { date: newDate, items: [] }];
+    const next = { ...itinerary, days: newDays };
+    setItinerary(next);
+    setSelectedDay(newDays.length - 1);
     setEditingId(null);
   };
 
   const removeDay = (index: number) => {
     if (!itinerary || itinerary.days.length <= 1) return;
-    updateDays((days) => days.filter((_, i) => i !== index));
-    setSelectedDay((prev) => Math.min(prev, itinerary.days.length - 2));
+    const newDays = itinerary.days.filter((_, i) => i !== index);
+    const next = { ...itinerary, days: newDays };
+    setItinerary(next);
+    setSelectedDay((prev) => Math.min(prev, newDays.length - 1));
     setEditingId(null);
   };
 
   const updateDayDate = (index: number, date: string) => {
-    updateDays((days) => days.map((d, i) => i === index ? { ...d, date } : d));
+    if (!itinerary) return;
+    const newDays = itinerary.days.map((d, i) => i === index ? { ...d, date } : d);
+    setItinerary({ ...itinerary, days: newDays });
   };
 
   const updateTitle = (title: string) => {
-    setItinerary((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, title };
-      saveToDb(next);
-      return next;
-    });
+    if (!itinerary) return;
+    setItinerary({ ...itinerary, title });
   };
 
   const shareUrl = `${window.location.origin}/plan/${code}`;
