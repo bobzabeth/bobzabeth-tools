@@ -157,7 +157,7 @@ export default function PlanViewPage() {
           {/* URL コピー */}
           <button
             onClick={handleShare}
-            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
           >
             🔗 URLをコピー
           </button>
@@ -184,7 +184,7 @@ export default function PlanViewPage() {
           {/* X でシェア */}
           <button
             onClick={handleXShare}
-            className="w-full border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 text-slate-600 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg"
           >
             <span className="font-black text-sm">𝕏</span>
             <span>でシェア</span>

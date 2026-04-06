@@ -143,21 +143,31 @@ export default function PlanEditPage() {
     });
   };
 
+  const shareUrl = `${window.location.origin}/plan/${code}`;
+
   const handleShare = async () => {
-    const url = `${window.location.origin}/plan/${code}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       setShareMsg("URLをコピーしました！");
     } catch {
-      setShareMsg(url);
+      setShareMsg(shareUrl);
     }
     setTimeout(() => setShareMsg(""), 3000);
   };
 
   const handleLineShare = () => {
-    const url = `${window.location.origin}/plan/${code}`;
     window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`,
+      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`,
+      "_blank"
+    );
+  };
+
+  const handleXShare = () => {
+    const text = itinerary
+      ? `${itinerary.title}のおでかけプランをシェアします！ #おでかけプランナー`
+      : "#おでかけプランナー";
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
       "_blank"
     );
   };
@@ -317,23 +327,26 @@ export default function PlanEditPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
             シェア・書き出し
           </p>
+          {/* LINE */}
+          <button
+            onClick={handleLineShare}
+            style={{ backgroundColor: "#06C755" }}
+            className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg"
+          >
+            <span className="font-black text-base">LINE</span>
+            <span>でシェア</span>
+          </button>
+          {/* URL コピー */}
           <button
             onClick={handleShare}
-            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
           >
-            🔗 シェアURLをコピー
+            🔗 URLをコピー
           </button>
           {shareMsg && (
             <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>
           )}
-          <button
-            onClick={handleLineShare}
-            style={{ backgroundColor: "#06C755" }}
-            className="w-full text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
-          >
-            <span className="font-black">LINE</span>
-            <span>でシェア</span>
-          </button>
+          {/* 画像で保存 */}
           <button
             onClick={handleExport}
             disabled={exporting || itinerary.items.length === 0}
@@ -347,6 +360,14 @@ export default function PlanEditPage() {
             ) : (
               "📷 画像で保存"
             )}
+          </button>
+          {/* X でシェア */}
+          <button
+            onClick={handleXShare}
+            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg"
+          >
+            <span className="text-base">𝕏</span>
+            <span>でシェア</span>
           </button>
         </div>
 

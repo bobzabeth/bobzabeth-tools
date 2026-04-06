@@ -105,7 +105,7 @@ export default function PlanPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 group">
+                  <div className="flex items-center gap-3">
                     <a
                       href={`/plan/${plan.code}`}
                       className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
@@ -117,7 +117,7 @@ export default function PlanPage() {
                     </a>
                     <button
                       onClick={() => setDeletingCode(plan.code)}
-                      className="flex-shrink-0 text-slate-200 hover:text-red-400 transition-colors text-lg leading-none opacity-0 group-hover:opacity-100"
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
                       title="削除"
                     >
                       ×
