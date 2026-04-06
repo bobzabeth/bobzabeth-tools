@@ -39,11 +39,9 @@ export async function PATCH(
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params;
-  const { data, editPassword } = await request.json();
-
-  if (!data) {
-    return Response.json({ error: "Invalid data" }, { status: 400 });
-  }
+  // data は省略可（パスワード変更のみの場合）
+  // newEditPassword: string = 新パスワード設定, "" | null = パスワード削除, undefined = 変更なし
+  const { data, editPassword, newEditPassword } = await request.json();
 
   const { data: row, error: fetchError } = await supabase
     .from("plans")
@@ -65,13 +63,20 @@ export async function PATCH(
     }
   }
 
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+    last_accessed_at: new Date().toISOString(),
+  };
+  if (data != null) patch.data = data;
+  if (newEditPassword !== undefined) {
+    patch.edit_password_hash = newEditPassword
+      ? await bcrypt.hash(newEditPassword, 10)
+      : null;
+  }
+
   const { error: updateError } = await supabase
     .from("plans")
-    .update({
-      data,
-      updated_at: new Date().toISOString(),
-      last_accessed_at: new Date().toISOString(),
-    })
+    .update(patch)
     .eq("short_code", code);
 
   if (updateError) {

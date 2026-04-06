@@ -7,6 +7,7 @@ import {
   loadPlanFromDb,
   updatePlanInDb,
   verifyPlanPassword,
+  changePassword,
   sortItemsByTime,
   updateMyPlanMeta,
 } from "../../utils";
@@ -34,6 +35,10 @@ export default function PlanEditPage() {
   const [exporting, setExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState("");
+  // パスワード設定UI
+  const [showPwSection, setShowPwSection] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
   const timelineRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,13 +168,33 @@ export default function PlanEditPage() {
   };
 
   const handleXShare = () => {
-    const text = itinerary
-      ? `${itinerary.title}のおでかけプランをシェアします！ #おでかけプランナー`
-      : "#おでかけプランナー";
+    const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+    const toolUrl = `${window.location.origin}/plan`;
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(toolUrl)}`,
       "_blank"
     );
+  };
+
+  const handlePasswordSave = async (remove = false) => {
+    setPwStatus("saving");
+    const currentPw = sessionStorage.getItem(sessionKey) || undefined;
+    const ok = await changePassword(code, currentPw, remove ? null : newPw);
+    if (ok) {
+      if (remove) {
+        sessionStorage.removeItem(sessionKey);
+        setHasPassword(false);
+      } else {
+        sessionStorage.setItem(sessionKey, newPw);
+        setHasPassword(true);
+        setPasswordInput(newPw);
+      }
+      setNewPw("");
+      setPwStatus("saved");
+      setTimeout(() => { setPwStatus(""); setShowPwSection(false); }, 1500);
+    } else {
+      setPwStatus("error");
+    }
   };
 
   const handleExport = async () => {
@@ -369,6 +394,62 @@ export default function PlanEditPage() {
             <span className="text-base">𝕏</span>
             <span>でシェア</span>
           </button>
+        </div>
+
+        {/* パスワード設定 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
+          <button
+            onClick={() => setShowPwSection((v) => !v)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">{hasPassword ? "🔒" : "🔓"}</span>
+              <span className="text-sm font-bold text-slate-600">
+                編集パスワード
+              </span>
+              {hasPassword && (
+                <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-0.5 rounded-full">設定済み</span>
+              )}
+            </div>
+            <span className="text-slate-300 text-sm">{showPwSection ? "▲" : "▼"}</span>
+          </button>
+
+          {showPwSection && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-slate-400">
+                {hasPassword
+                  ? "新しいパスワードを入力すると変更できます。削除するとURLを知る人なら誰でも編集できます。"
+                  : "設定するとURLを知っていてもパスワードなしでは編集できません。"}
+              </p>
+              <input
+                type="password"
+                value={newPw}
+                onChange={(e) => { setNewPw(e.target.value); setPwStatus(""); }}
+                placeholder={hasPassword ? "新しいパスワード" : "パスワードを設定"}
+                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
+              />
+              {pwStatus === "error" && <p className="text-xs text-red-400">保存に失敗しました</p>}
+              {pwStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
+              <div className="flex gap-2">
+                {hasPassword && (
+                  <button
+                    onClick={() => handlePasswordSave(true)}
+                    disabled={pwStatus === "saving"}
+                    className="flex-1 border-2 border-red-200 text-red-400 hover:border-red-400 font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-50"
+                  >
+                    パスワードを削除
+                  </button>
+                )}
+                <button
+                  onClick={() => handlePasswordSave(false)}
+                  disabled={!newPw || pwStatus === "saving"}
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-40"
+                >
+                  {pwStatus === "saving" ? "保存中..." : hasPassword ? "変更する" : "設定する"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {previewUrl && (

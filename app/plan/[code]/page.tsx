@@ -48,11 +48,10 @@ export default function PlanViewPage() {
   };
 
   const handleXShare = () => {
-    const text = itinerary
-      ? `${itinerary.title}のおでかけプランをシェアします！ #おでかけプランナー`
-      : "#おでかけプランナー";
+    const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+    const toolUrl = `${window.location.origin}/plan`;
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(toolUrl)}`,
       "_blank"
     );
   };

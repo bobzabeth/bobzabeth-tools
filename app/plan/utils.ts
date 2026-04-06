@@ -113,6 +113,22 @@ export async function deletePlanFromDb(code: string): Promise<boolean> {
   return res.ok;
 }
 
+export async function changePassword(
+  code: string,
+  currentPassword: string | undefined,
+  newPassword: string | null // null = 削除
+): Promise<boolean> {
+  const res = await fetch(`/api/plans/${code}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      editPassword: currentPassword || null,
+      newEditPassword: newPassword ?? "",
+    }),
+  });
+  return res.ok;
+}
+
 export async function verifyPlanPassword(
   code: string,
   password: string
