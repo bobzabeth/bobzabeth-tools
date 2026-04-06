@@ -63,7 +63,7 @@ export default function PlanPage() {
             </span>
           </h1>
           <p className="text-slate-500 text-sm">
-            旅の流れをかんたんにまとめて、みんなにシェアしよう
+            旅行・日帰り・イベントの流れをかんたんにまとめてシェアしよう
           </p>
         </div>
 

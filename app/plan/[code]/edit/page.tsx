@@ -272,7 +272,7 @@ export default function PlanEditPage() {
 
         {/* ヘッダー */}
         <div className="px-2 pt-2 flex items-center justify-between">
-          <span className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight">おでかけプランナー</span>
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">おでかけプランナー</a>
           <span className="text-xs text-slate-400 min-w-[60px] text-right">
             {saveStatus === "saving" ? "保存中..." : saveStatus === "saved" ? "✓ 保存済み" : ""}
           </span>
@@ -361,7 +361,9 @@ export default function PlanEditPage() {
 
         {/* シェア・書き出し */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">SHARE</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SHARE</p>
+          {/* このプランをシェア */}
+          <p className="text-[10px] text-slate-400 font-medium text-center">このプランをシェア</p>
           <button onClick={handleLineShare} style={{ backgroundColor: "#06C755" }}
             className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg">
             <span className="font-black text-base">LINE</span><span>でシェア</span>
@@ -375,10 +377,14 @@ export default function PlanEditPage() {
             className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 disabled:border-slate-100 disabled:text-slate-300 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
             {exporting ? <><span className="animate-spin h-4 w-4 border-2 border-sky-400 border-t-transparent rounded-full" />書き出し中...</> : "📷 画像で保存"}
           </button>
-          <button onClick={handleXShare}
-            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg">
-            <span className="text-base">𝕏</span><span>でシェア</span>
-          </button>
+          {/* 区切り */}
+          <div className="border-t border-slate-100 pt-3">
+            <p className="text-[10px] text-slate-400 font-medium text-center mb-3">このツールを紹介する</p>
+            <button onClick={handleXShare}
+              className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg">
+              <span className="text-base">𝕏</span><span>でシェア</span>
+            </button>
+          </div>
         </div>
 
         {/* パスワード設定 */}
@@ -449,9 +455,13 @@ export default function PlanEditPage() {
           </div>
         )}
 
-        <footer className="text-center text-xs text-slate-300 pb-4 space-y-1">
-          <div><a href="/plan" className="hover:text-sky-400 transition-colors">← マイおでかけ一覧に戻る</a></div>
-          <div><a href="/" className="hover:text-sky-400 transition-colors">← ツール一覧に戻る</a></div>
+        <footer className="pb-6 space-y-2">
+          <a href="/plan" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/80 backdrop-blur-sm shadow-sm">
+            ← マイおでかけ一覧に戻る
+          </a>
+          <a href="/" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-100 hover:border-slate-300 text-slate-400 hover:text-slate-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/60 backdrop-blur-sm">
+            ← ツール一覧に戻る
+          </a>
         </footer>
       </div>
     </main>
