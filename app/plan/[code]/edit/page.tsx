@@ -10,6 +10,7 @@ import {
   changePassword,
   sortItemsByTime,
   updateMyPlanMeta,
+  getMyPlans,
 } from "../../utils";
 import TimelineView from "../../components/TimelineView";
 
@@ -39,6 +40,7 @@ export default function PlanEditPage() {
   const [exporting, setExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
   const [showPwSection, setShowPwSection] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
@@ -51,6 +53,7 @@ export default function PlanEditPage() {
     loadPlanFromDb(code).then((result) => {
       if (!result) { setError(true); return; }
       setItinerary(result.data);
+      setIsCreator(getMyPlans().some((p) => p.code === code));
       if (result.hasPassword) {
         setHasPassword(true);
         const saved = sessionStorage.getItem(sessionKey);
@@ -380,36 +383,53 @@ export default function PlanEditPage() {
 
         {/* パスワード設定 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          <button onClick={() => setShowPwSection((v) => !v)} className="w-full flex items-center justify-between text-left">
+          {isCreator ? (
+            <>
+              <button onClick={() => setShowPwSection((v) => !v)} className="w-full flex items-center justify-between text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{hasPassword ? "🔒" : "🔓"}</span>
+                  <span className="text-sm font-bold text-slate-600">編集パスワード</span>
+                  {hasPassword && <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-0.5 rounded-full">設定済み</span>}
+                </div>
+                <span className="text-slate-300 text-sm">{showPwSection ? "▲" : "▼"}</span>
+              </button>
+              {showPwSection && (
+                <div className="mt-4 space-y-3">
+                  {hasPassword && (
+                    <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-2.5 flex items-center justify-between">
+                      <span className="text-xs text-slate-400">現在のパスワード</span>
+                      <span className="text-sm font-bold text-slate-600 font-mono">{sessionStorage.getItem(sessionKey) || "—"}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-slate-400">
+                    {hasPassword ? "新しいパスワードを入力すると変更できます。削除するとURLを知る人なら誰でも編集できます。" : "設定するとURLを知っていてもパスワードなしでは編集できません。"}
+                  </p>
+                  <input type="text" value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwStatus(""); }}
+                    placeholder={hasPassword ? "新しいパスワード" : "パスワードを設定"}
+                    className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50" />
+                  {pwStatus === "error" && <p className="text-xs text-red-400">保存に失敗しました</p>}
+                  {pwStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
+                  <div className="flex gap-2">
+                    {hasPassword && (
+                      <button onClick={() => handlePasswordSave(true)} disabled={pwStatus === "saving"}
+                        className="flex-1 border-2 border-red-200 text-red-400 hover:border-red-400 font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-50">
+                        パスワードを削除
+                      </button>
+                    )}
+                    <button onClick={() => handlePasswordSave(false)} disabled={!newPw || pwStatus === "saving"}
+                      className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-40">
+                      {pwStatus === "saving" ? "保存中..." : hasPassword ? "変更する" : "設定する"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* 作成者以外：現在のパスワードを表示するだけ */
             <div className="flex items-center gap-2">
-              <span className="text-base">{hasPassword ? "🔒" : "🔓"}</span>
+              <span className="text-base">🔒</span>
               <span className="text-sm font-bold text-slate-600">編集パスワード</span>
-              {hasPassword && <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-0.5 rounded-full">設定済み</span>}
-            </div>
-            <span className="text-slate-300 text-sm">{showPwSection ? "▲" : "▼"}</span>
-          </button>
-          {showPwSection && (
-            <div className="mt-4 space-y-3">
-              <p className="text-xs text-slate-400">
-                {hasPassword ? "新しいパスワードを入力すると変更できます。削除するとURLを知る人なら誰でも編集できます。" : "設定するとURLを知っていてもパスワードなしでは編集できません。"}
-              </p>
-              <input type="password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwStatus(""); }}
-                placeholder={hasPassword ? "新しいパスワード" : "パスワードを設定"}
-                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50" />
-              {pwStatus === "error" && <p className="text-xs text-red-400">保存に失敗しました</p>}
-              {pwStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
-              <div className="flex gap-2">
-                {hasPassword && (
-                  <button onClick={() => handlePasswordSave(true)} disabled={pwStatus === "saving"}
-                    className="flex-1 border-2 border-red-200 text-red-400 hover:border-red-400 font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-50">
-                    パスワードを削除
-                  </button>
-                )}
-                <button onClick={() => handlePasswordSave(false)} disabled={!newPw || pwStatus === "saving"}
-                  className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold py-2.5 rounded-2xl text-xs transition-all disabled:opacity-40">
-                  {pwStatus === "saving" ? "保存中..." : hasPassword ? "変更する" : "設定する"}
-                </button>
-              </div>
+              <span className="ml-auto text-sm font-bold text-slate-600 font-mono">{sessionStorage.getItem(sessionKey) || "—"}</span>
             </div>
           )}
         </div>
