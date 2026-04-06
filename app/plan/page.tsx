@@ -15,6 +15,7 @@ export default function PlanPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<MyPlanMeta[]>([]);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(false);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,14 +24,17 @@ export default function PlanPage() {
 
   const handleNew = async () => {
     setCreating(true);
+    setCreateError(false);
     try {
       const today = new Date().toISOString().slice(0, 10);
       const itinerary = { title: "", days: [{ date: today, items: [] }] };
       const code = await savePlanToDb(itinerary);
       addMyPlan(code, "", today);
       router.push(`/plan/${code}/edit`);
-    } catch {
+    } catch (e) {
+      console.error("Failed to create plan:", e);
       setCreating(false);
+      setCreateError(true);
     }
   };
 
@@ -78,6 +82,12 @@ export default function PlanPage() {
             "＋ 新規おでかけ"
           )}
         </button>
+
+        {createError && (
+          <p className="text-center text-sm text-red-400 font-medium -mt-2">
+            作成に失敗しました。もう一度お試しください。
+          </p>
+        )}
 
         {/* マイプラン一覧 */}
         {plans.length > 0 && (
