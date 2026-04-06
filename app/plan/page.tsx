@@ -7,6 +7,7 @@ import {
   addMyPlan,
   removeMyPlanCode,
   savePlanToDb,
+  deletePlanFromDb,
   type MyPlanMeta,
 } from "./utils";
 
@@ -14,6 +15,7 @@ export default function PlanPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<MyPlanMeta[]>([]);
   const [creating, setCreating] = useState(false);
+  const [deletingCode, setDeletingCode] = useState<string | null>(null);
 
   useEffect(() => {
     setPlans(getMyPlans());
@@ -32,9 +34,11 @@ export default function PlanPage() {
     }
   };
 
-  const handleRemove = (code: string) => {
+  const handleDeleteConfirm = async (code: string) => {
+    await deletePlanFromDb(code);
     removeMyPlanCode(code);
     setPlans((prev) => prev.filter((p) => p.code !== code));
+    setDeletingCode(null);
   };
 
   return (
@@ -80,23 +84,46 @@ export default function PlanPage() {
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイおでかけ</p>
             {plans.map((plan) => (
-              <div key={plan.code} className="flex items-center gap-3 group">
-                <a
-                  href={`/plan/${plan.code}`}
-                  className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
-                >
-                  <p className="font-bold text-slate-700 text-sm truncate">
-                    {plan.title || "タイトル未設定"}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
-                </a>
-                <button
-                  onClick={() => handleRemove(plan.code)}
-                  className="flex-shrink-0 text-slate-200 hover:text-red-400 transition-colors text-lg leading-none opacity-0 group-hover:opacity-100"
-                  title="リストから削除"
-                >
-                  ×
-                </button>
+              <div key={plan.code}>
+                {deletingCode === plan.code ? (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 space-y-2">
+                    <p className="text-sm font-bold text-red-500">「{plan.title || "タイトル未設定"}」を削除しますか？</p>
+                    <p className="text-xs text-red-400">この操作は元に戻せません。</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setDeletingCode(null)}
+                        className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-xl text-xs"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        onClick={() => handleDeleteConfirm(plan.code)}
+                        className="flex-1 bg-red-500 text-white font-bold py-2 rounded-xl text-xs"
+                      >
+                        削除する
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 group">
+                    <a
+                      href={`/plan/${plan.code}`}
+                      className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
+                    >
+                      <p className="font-bold text-slate-700 text-sm truncate">
+                        {plan.title || "タイトル未設定"}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
+                    </a>
+                    <button
+                      onClick={() => setDeletingCode(plan.code)}
+                      className="flex-shrink-0 text-slate-200 hover:text-red-400 transition-colors text-lg leading-none opacity-0 group-hover:opacity-100"
+                      title="削除"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

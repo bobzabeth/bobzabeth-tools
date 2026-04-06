@@ -80,3 +80,21 @@ export async function PATCH(
 
   return Response.json({ ok: true });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ code: string }> }
+) {
+  const { code } = await params;
+
+  const { error } = await supabase
+    .from("plans")
+    .delete()
+    .eq("short_code", code);
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({ ok: true });
+}

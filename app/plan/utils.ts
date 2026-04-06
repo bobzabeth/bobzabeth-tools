@@ -108,6 +108,11 @@ export async function updatePlanInDb(
   return res.ok;
 }
 
+export async function deletePlanFromDb(code: string): Promise<boolean> {
+  const res = await fetch(`/api/plans/${code}`, { method: "DELETE" });
+  return res.ok;
+}
+
 export async function verifyPlanPassword(
   code: string,
   password: string

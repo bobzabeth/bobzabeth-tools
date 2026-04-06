@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Itinerary } from "../types";
-import { loadPlanFromDb, generateShareUrl } from "../utils";
+import { loadPlanFromDb } from "../utils";
 import TimelineView from "../components/TimelineView";
 
 export default function PlanViewPage() {
@@ -26,21 +26,33 @@ export default function PlanViewPage() {
     });
   }, [code]);
 
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/plan/${code}`
+    : `/plan/${code}`;
+
   const handleShare = async () => {
-    const url = `${window.location.origin}/plan/${code}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       setShareMsg("URLをコピーしました！");
     } catch {
-      setShareMsg(url);
+      setShareMsg(shareUrl);
     }
     setTimeout(() => setShareMsg(""), 3000);
   };
 
   const handleLineShare = () => {
-    const url = `${window.location.origin}/plan/${code}`;
     window.open(
-      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`,
+      `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`,
+      "_blank"
+    );
+  };
+
+  const handleXShare = () => {
+    const text = itinerary
+      ? `${itinerary.title}のおでかけプランをシェアします！ #おでかけプランナー`
+      : "#おでかけプランナー";
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
       "_blank"
     );
   };
@@ -75,11 +87,8 @@ export default function PlanViewPage() {
           <p className="text-5xl">🗺️</p>
           <p className="font-bold text-slate-700">プランが見つかりません</p>
           <p className="text-sm text-slate-400">URLが間違っているか、削除された可能性があります。</p>
-          <a
-            href="/plan"
-            className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium"
-          >
-            ← 新しいプランを作る
+          <a href="/plan" className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium">
+            ← マイおでかけ一覧へ
           </a>
         </div>
       </main>
@@ -103,6 +112,7 @@ export default function PlanViewPage() {
       </div>
 
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
+
         {/* ヘッダー */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
           <h1 className="text-3xl font-extrabold tracking-tight">
@@ -115,33 +125,47 @@ export default function PlanViewPage() {
           </p>
         </div>
 
+        {/* 編集ボタン（タイムラインの上） */}
+        <button
+          onClick={() => router.push(`/plan/${code}/edit`)}
+          className="w-full border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm bg-white/80 backdrop-blur-sm shadow-sm"
+        >
+          ✏️ このプランを編集
+        </button>
+
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
           <TimelineView ref={timelineRef} itinerary={itinerary} />
         </div>
 
-        {/* アクション */}
+        {/* シェア・書き出し */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">
             シェア・書き出し
           </p>
+
+          {/* LINE */}
+          <button
+            onClick={handleLineShare}
+            style={{ backgroundColor: "#06C755" }}
+            className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg"
+          >
+            <span className="font-black text-base">LINE</span>
+            <span>でシェア</span>
+          </button>
+
+          {/* URL コピー */}
           <button
             onClick={handleShare}
-            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
           >
-            🔗 シェアURLをコピー
+            🔗 URLをコピー
           </button>
           {shareMsg && (
             <p className="text-xs text-center text-sky-500 font-medium break-all">{shareMsg}</p>
           )}
-          <button
-            onClick={handleLineShare}
-            style={{ backgroundColor: "#06C755" }}
-            className="w-full text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
-          >
-            <span className="font-black">LINE</span>
-            <span>でシェア</span>
-          </button>
+
+          {/* 画像で保存 */}
           <button
             onClick={handleExport}
             disabled={exporting}
@@ -156,11 +180,14 @@ export default function PlanViewPage() {
               "📷 画像で保存"
             )}
           </button>
+
+          {/* X でシェア */}
           <button
-            onClick={() => router.push(`/plan/${code}/edit`)}
-            className="w-full border-2 border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+            onClick={handleXShare}
+            className="w-full border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 text-slate-600 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
           >
-            ✏️ このプランを編集
+            <span className="font-black text-sm">𝕏</span>
+            <span>でシェア</span>
           </button>
         </div>
 
