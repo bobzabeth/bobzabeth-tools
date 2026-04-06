@@ -8,6 +8,7 @@ import { formatDate, sortItemsByTime, TRANSPORT_ICONS } from "../utils";
 
 type Props = {
   itinerary: { title: string; date: string; items: Item[] };
+  hideHeader?: boolean;
   editingId?: string | null;
   newItemId?: string | null;
   onUpdate?: (updated: Item) => void;
@@ -17,7 +18,7 @@ type Props = {
 };
 
 const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
-  { itinerary, editingId, newItemId, onUpdate, onDelete, onCardClick, onClose },
+  { itinerary, hideHeader, editingId, newItemId, onUpdate, onDelete, onCardClick, onClose },
   ref
 ) {
   const sorted = sortItemsByTime(itinerary.items);
@@ -38,16 +39,18 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
   return (
     <div ref={ref} className="space-y-0">
       {/* ヘッダー */}
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-black text-slate-800 leading-tight">
-          {itinerary.title || "タイトル未設定"}
-        </h2>
-        {itinerary.date && (
-          <p className="text-sm text-slate-400 font-medium mt-1">
-            {formatDate(itinerary.date)}
-          </p>
-        )}
-      </div>
+      {!hideHeader && (
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-black text-slate-800 leading-tight">
+            {itinerary.title || "タイトル未設定"}
+          </h2>
+          {itinerary.date && (
+            <p className="text-sm text-slate-400 font-medium mt-1">
+              {formatDate(itinerary.date)}
+            </p>
+          )}
+        </div>
+      )}
 
       {sorted.length === 0 && (
         <div className="text-center py-12 text-slate-300">

@@ -32,6 +32,7 @@ export default function PlanEditPage() {
   const [passwordError, setPasswordError] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [selectedDay, setSelectedDay] = useState(0);
+  const [deletingDayIndex, setDeletingDayIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "">("");
@@ -62,7 +63,7 @@ export default function PlanEditPage() {
 
   const handlePasswordSubmit = async () => {
     const ok = await verifyPlanPassword(code, passwordInput);
-    if (ok) { sessionStorage.setItem(sessionKey, passwordInput); setHasPassword(false); setUnlocked(true); }
+    if (ok) { sessionStorage.setItem(sessionKey, passwordInput); setUnlocked(true); }
     else setPasswordError(true);
   };
 
@@ -157,6 +158,7 @@ export default function PlanEditPage() {
     setItinerary(next);
     setSelectedDay((prev) => Math.min(prev, newDays.length - 1));
     setEditingId(null);
+    setDeletingDayIndex(null);
   };
 
   const updateDayDate = (index: number, date: string) => {
@@ -266,12 +268,11 @@ export default function PlanEditPage() {
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
         {/* ヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">おでかけプランナー</span>
-          </h1>
-          {saveStatus === "saving" && <p className="text-xs text-slate-400">保存中...</p>}
-          {saveStatus === "saved" && <p className="text-xs text-sky-500">✓ 保存しました</p>}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-6 py-3 text-center flex items-center justify-between">
+          <span className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight">おでかけプランナー</span>
+          <span className="text-xs text-slate-400 min-w-[60px] text-right">
+            {saveStatus === "saving" ? "保存中..." : saveStatus === "saved" ? "✓ 保存済み" : ""}
+          </span>
         </div>
 
         {/* タイトル */}
@@ -287,28 +288,43 @@ export default function PlanEditPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">日程</p>
           <div className="space-y-2">
             {itinerary.days.map((day, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <button
-                  onClick={() => { setSelectedDay(i); setEditingId(null); }}
-                  className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
-                    selectedDay === i
-                      ? "bg-sky-500 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
-                  }`}
-                >
-                  {i + 1}日目
-                </button>
-                <input
-                  type="date"
-                  value={day.date}
-                  onChange={(e) => updateDayDate(i, e.target.value)}
-                  className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-sky-300 bg-slate-50"
-                />
-                {itinerary.days.length > 1 && (
-                  <button
-                    onClick={() => removeDay(i)}
-                    className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg"
-                  >×</button>
+              <div key={i}>
+                {deletingDayIndex === i ? (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 space-y-2">
+                    <p className="text-sm font-bold text-red-500">{i + 1}日目を削除しますか？</p>
+                    <p className="text-xs text-red-400">この日のコマもすべて削除されます。</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setDeletingDayIndex(null)}
+                        className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-xl text-xs">キャンセル</button>
+                      <button onClick={() => removeDay(i)}
+                        className="flex-1 bg-red-500 text-white font-bold py-2 rounded-xl text-xs">削除する</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setSelectedDay(i); setEditingId(null); }}
+                      className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
+                        selectedDay === i
+                          ? "bg-sky-500 text-white shadow-sm"
+                          : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
+                      }`}
+                    >
+                      {i + 1}日目
+                    </button>
+                    <input
+                      type="date"
+                      value={day.date}
+                      onChange={(e) => updateDayDate(i, e.target.value)}
+                      className="flex-1 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-sky-300 bg-slate-50"
+                    />
+                    {itinerary.days.length > 1 && (
+                      <button
+                        onClick={() => setDeletingDayIndex(i)}
+                        className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg"
+                      >×</button>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
@@ -342,7 +358,7 @@ export default function PlanEditPage() {
 
         {/* シェア・書き出し */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">シェア・書き出し</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">SHARE</p>
           <button onClick={handleLineShare} style={{ backgroundColor: "#06C755" }}
             className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg">
             <span className="font-black text-base">LINE</span><span>でシェア</span>

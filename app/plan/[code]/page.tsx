@@ -88,11 +88,8 @@ export default function PlanViewPage() {
 
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">おでかけプランナー</span>
-          </h1>
-          <p className="text-slate-500 text-sm">旅の流れをかんたんにまとめて、みんなにシェアしよう</p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-6 py-3 text-center">
+          <span className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight">おでかけプランナー</span>
         </div>
 
         <button onClick={() => router.push(`/plan/${code}/edit`)}
@@ -100,30 +97,43 @@ export default function PlanViewPage() {
           ✏️ このプランを編集
         </button>
 
-        {/* タイムライン */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
-          {/* 日タブ（複数日のみ表示） */}
-          {itinerary.days.length > 1 && (
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-              {itinerary.days.map((day, i) => (
-                <button key={i}
-                  onClick={() => setSelectedDay(i)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all ${
-                    selectedDay === i ? "bg-sky-500 text-white shadow-md" : "border-2 border-slate-100 text-slate-400 hover:border-sky-200 hover:text-sky-500"
-                  }`}
-                >
-                  {i + 1}日目
-                  {day.date && <span className="ml-1 text-xs opacity-75">{day.date.slice(5).replace("-", "/")}</span>}
-                </button>
-              ))}
-            </div>
+        {/* タイトル */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 text-center">
+          <h2 className="text-2xl font-black text-slate-800 leading-tight">
+            {itinerary.title || "タイトル未設定"}
+          </h2>
+          {currentDay.date && (
+            <p className="text-sm text-slate-400 font-medium mt-1">
+              {new Date(currentDay.date + "T00:00:00").toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}
+            </p>
           )}
-          <TimelineView ref={timelineRef} itinerary={dayView} />
         </div>
 
-        {/* シェア・書き出し */}
+        {/* 日タブ（複数日のみ） */}
+        {itinerary.days.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {itinerary.days.map((day, i) => (
+              <button key={i}
+                onClick={() => setSelectedDay(i)}
+                className={`flex-shrink-0 px-4 py-2 rounded-2xl text-sm font-bold transition-all ${
+                  selectedDay === i ? "bg-sky-500 text-white shadow-md" : "bg-white/80 border-2 border-slate-100 text-slate-400 hover:border-sky-200 hover:text-sky-500"
+                }`}
+              >
+                {i + 1}日目
+                {day.date && <span className="ml-1 text-xs opacity-75">{day.date.slice(5).replace("-", "/")}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* タイムライン */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
+          <TimelineView ref={timelineRef} itinerary={dayView} hideHeader />
+        </div>
+
+        {/* SHARE */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">シェア・書き出し</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2">SHARE</p>
           <button onClick={handleLineShare} style={{ backgroundColor: "#06C755" }}
             className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 shadow-lg">
             <span className="font-black text-base">LINE</span><span>でシェア</span>
