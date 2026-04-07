@@ -54,6 +54,7 @@ export default function PlanEditPage() {
   const [newPw, setNewPw] = useState("");
   const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
   const timelineRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialized = useRef(false);
   const sessionKey = `plan_pw_${code}`;
@@ -201,42 +202,14 @@ export default function PlanEditPage() {
   };
 
   const handleExport = async () => {
-    if (!timelineRef.current) return;
+    if (!exportRef.current) return;
     setExporting(true);
     try {
       const { toPng } = await import("html-to-image");
-      const el = timelineRef.current;
-      const all = Array.from(el.querySelectorAll<HTMLElement>("*")).concat(el);
-      type Saved = { backdropFilter: string; backgroundColor: string };
-      const saved = new Map<HTMLElement, Saved>();
-      all.forEach((node) => {
-        const cs = getComputedStyle(node);
-        if (cs.backdropFilter !== "none" || cs.backgroundColor.startsWith("rgba")) {
-          saved.set(node, {
-            backdropFilter: node.style.backdropFilter,
-            backgroundColor: node.style.backgroundColor,
-          });
-          node.style.backdropFilter = "none";
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (node.style as any).webkitBackdropFilter = "none";
-          if (cs.backgroundColor.startsWith("rgba")) node.style.backgroundColor = "#ffffff";
-        }
-      });
-      const prevPadding = el.style.padding;
-      const prevBg = el.style.background;
-      el.style.padding = "40px";
-      el.style.background = "#FFFBF5";
-      try {
-        setPreviewUrl(await toPng(el, { pixelRatio: 2 }));
-      } finally {
-        el.style.padding = prevPadding;
-        el.style.background = prevBg;
-        saved.forEach((s, node) => {
-          node.style.backdropFilter = s.backdropFilter;
-          node.style.backgroundColor = s.backgroundColor;
-        });
-      }
-    } finally { setExporting(false); }
+      setPreviewUrl(await toPng(exportRef.current, { pixelRatio: 2 }));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDownload = () => {
@@ -504,6 +477,28 @@ export default function PlanEditPage() {
 
         <PlanFooter />
       </div>
+
+      {/* 画像export用の隠しレンダリング領域 */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none" }}>
+        <div ref={exportRef} style={{ background: "#FFFBF5", padding: "40px", width: "480px" }}>
+          {itinerary && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                <p style={{ fontSize: "22px", fontWeight: 900, color: "#1e293b", margin: 0 }}>
+                  {itinerary.title || "タイトル未設定"}
+                </p>
+                {currentDay.date && (
+                  <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
+                    {new Date(currentDay.date + "T00:00:00").toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}
+                  </p>
+                )}
+              </div>
+              <TimelineView itinerary={dayView} exportMode hideHeader />
+            </>
+          )}
+        </div>
+      </div>
+
       <FeedbackButton page="plan-edit" />
     </main>
   );

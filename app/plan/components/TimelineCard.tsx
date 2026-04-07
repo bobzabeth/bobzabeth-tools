@@ -7,6 +7,7 @@ import { extractGoogleMapsName } from "../utils";
 type ViewProps = {
   item: Item;
   isEditing?: false;
+  exportMode?: boolean;
 };
 
 type EditProps = {
@@ -34,13 +35,13 @@ export default function TimelineCard(props: Props) {
       />
     );
   }
-  return <ViewCard item={item} />;
+  return <ViewCard item={item} exportMode={(props as ViewProps).exportMode} />;
 }
 
-function ViewCard({ item }: { item: Item }) {
+function ViewCard({ item, exportMode }: { item: Item; exportMode?: boolean }) {
   const hasEnd = item.endTime || item.endMemo;
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm">
+    <div className={`${exportMode ? "bg-white" : "bg-white/80 backdrop-blur-sm"} border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm`}>
       <div className="p-5 space-y-0">
         {/* 開始行 */}
         <div className="flex items-start gap-3">

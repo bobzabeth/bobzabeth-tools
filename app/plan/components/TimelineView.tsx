@@ -9,6 +9,7 @@ import { formatDate, sortItemsByTime, TRANSPORT_ICONS } from "../utils";
 type Props = {
   itinerary: { title: string; date: string; items: Item[] };
   hideHeader?: boolean;
+  exportMode?: boolean;
   editingId?: string | null;
   newItemId?: string | null;
   onUpdate?: (updated: Item) => void;
@@ -18,7 +19,7 @@ type Props = {
 };
 
 const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
-  { itinerary, hideHeader, editingId, newItemId, onUpdate, onDelete, onCardClick, onClose },
+  { itinerary, hideHeader, exportMode, editingId, newItemId, onUpdate, onDelete, onCardClick, onClose },
   ref
 ) {
   const sorted = sortItemsByTime(itinerary.items);
@@ -81,7 +82,7 @@ const TimelineView = forwardRef<HTMLDivElement, Props>(function TimelineView(
                   onClose={() => onClose?.()}
                 />
               ) : (
-                <TimelineCard item={item} />
+                <TimelineCard item={item} exportMode={exportMode} />
               )}
             </div>
 
