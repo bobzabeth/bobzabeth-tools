@@ -10,6 +10,8 @@ import {
   deletePlanFromDb,
   type MyPlanMeta,
 } from "./utils";
+import FeedbackButton from "./components/FeedbackButton";
+import PlanFooter from "./components/PlanFooter";
 
 export default function PlanPage() {
   const router = useRouter();
@@ -145,12 +147,9 @@ export default function PlanPage() {
           </div>
         )}
 
-        <footer className="text-center text-xs text-slate-300 pb-4">
-          <a href="/" className="hover:text-sky-400 transition-colors">
-            ← ツール一覧に戻る
-          </a>
-        </footer>
+        <PlanFooter showMyPlan={false} />
       </div>
+      <FeedbackButton page="plan-home" />
     </main>
   );
 }

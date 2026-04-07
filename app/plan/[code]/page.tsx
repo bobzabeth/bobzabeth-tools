@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import type { Itinerary } from "../types";
 import { loadPlanFromDb } from "../utils";
 import TimelineView from "../components/TimelineView";
+import FeedbackButton from "../components/FeedbackButton";
+import PlanFooter from "../components/PlanFooter";
 
 export default function PlanViewPage() {
   const { code } = useParams<{ code: string }>();
@@ -47,16 +49,42 @@ export default function PlanViewPage() {
     try {
       const { toPng } = await import("html-to-image");
       const el = timelineRef.current;
-      // ラッパーdivを作って余白を付けてからキャプチャ
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText = "padding:40px;background:#FFFBF5;display:inline-block;";
-      const clone = el.cloneNode(true) as HTMLElement;
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
+
+      // backdrop-blur と半透明背景はキャンバスで黒くなるので一時的に無効化
+      const all = Array.from(el.querySelectorAll<HTMLElement>("*")).concat(el);
+      type Saved = { backdropFilter: string; backgroundColor: string };
+      const saved = new Map<HTMLElement, Saved>();
+      all.forEach((node) => {
+        const cs = getComputedStyle(node);
+        if (cs.backdropFilter !== "none" || cs.backgroundColor.startsWith("rgba")) {
+          saved.set(node, {
+            backdropFilter: node.style.backdropFilter,
+            backgroundColor: node.style.backgroundColor,
+          });
+          node.style.backdropFilter = "none";
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (node.style as any).webkitBackdropFilter = "none";
+          if (cs.backgroundColor.startsWith("rgba")) {
+            node.style.backgroundColor = "#ffffff";
+          }
+        }
+      });
+      // 余白をルート要素に付与
+      const prevPadding = el.style.padding;
+      const prevBg = el.style.background;
+      el.style.padding = "40px";
+      el.style.background = "#FFFBF5";
+
       try {
-        setPreviewUrl(await toPng(wrapper, { backgroundColor: "#FFFBF5", pixelRatio: 2 }));
+        setPreviewUrl(await toPng(el, { pixelRatio: 2 }));
       } finally {
-        document.body.removeChild(wrapper);
+        // スタイル復元
+        el.style.padding = prevPadding;
+        el.style.background = prevBg;
+        saved.forEach((s, node) => {
+          node.style.backdropFilter = s.backdropFilter;
+          node.style.backgroundColor = s.backgroundColor;
+        });
       }
     } finally { setExporting(false); }
   };
@@ -186,15 +214,9 @@ export default function PlanViewPage() {
           </div>
         )}
 
-        <footer className="pb-6 space-y-2">
-          <a href="/plan" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/80 backdrop-blur-sm shadow-sm">
-            ← マイおでかけ一覧に戻る
-          </a>
-          <a href="/" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-100 hover:border-slate-300 text-slate-400 hover:text-slate-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/60 backdrop-blur-sm">
-            ← ツール一覧に戻る
-          </a>
-        </footer>
+        <PlanFooter />
       </div>
+      <FeedbackButton page="plan-view" />
     </main>
   );
 }
