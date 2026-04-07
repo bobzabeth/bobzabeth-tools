@@ -41,7 +41,7 @@ export default function TimelineCard(props: Props) {
 function ViewCard({ item, exportMode }: { item: Item; exportMode?: boolean }) {
   const hasEnd = item.endTime || item.endMemo;
   return (
-    <div className={`${exportMode ? "bg-white" : "bg-white/80 backdrop-blur-sm"} border-2 border-sky-100 rounded-3xl overflow-hidden shadow-sm`}>
+    <div className={`${exportMode ? "bg-white" : "bg-white/80 backdrop-blur-sm shadow-sm"} border-2 border-sky-100 rounded-3xl overflow-hidden`}>
       <div className="p-5 space-y-0">
         {/* 開始行 */}
         <div className="flex items-start gap-3">
