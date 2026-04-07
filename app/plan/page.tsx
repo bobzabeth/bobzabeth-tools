@@ -167,6 +167,27 @@ export default function PlanPage() {
           ))}
         </div>
 
+        {/* SHARE */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-2">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SHARE</p>
+          <button
+            onClick={() => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.origin + "/plan")}`, "_blank")}
+            style={{ backgroundColor: "#06C755" }}
+            className="w-full text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg"
+          >
+            <span className="font-black">LINE</span><span>でシェア</span>
+          </button>
+          <button
+            onClick={() => {
+              const text = "旅のしおりがかんたんに作れるアプリ「イイ感じ旅のしおりくん」見つけたよ！みんなも使ってみてね！ #イイ感じ旅のしおりくん";
+              window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin + "/plan")}`, "_blank");
+            }}
+            className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg"
+          >
+            <span className="text-base">𝕏</span><span>でシェア</span>
+          </button>
+        </div>
+
         <PlanFooter showMyPlan={false} />
       </div>
       <FeedbackButton page="plan-home" />
