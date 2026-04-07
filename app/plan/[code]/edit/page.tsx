@@ -34,12 +34,12 @@ function addDays(dateStr: string, n: number): string {
 export default function PlanEditPage() {
   const { code } = useParams<{ code: string }>();
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [selectedDay, setSelectedDay] = useState(0);
   const [error, setError] = useState(false);
   const [hasPassword, setHasPassword] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(0);
   const [deletingDayIndex, setDeletingDayIndex] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
@@ -155,8 +155,7 @@ export default function PlanEditPage() {
     const lastDate = itinerary.days[itinerary.days.length - 1]?.date || localDateStr(new Date());
     const newDate = addDays(lastDate, 1);
     const newDays = [...itinerary.days, { date: newDate, items: [] }];
-    const next = { ...itinerary, days: newDays };
-    setItinerary(next);
+    setItinerary({ ...itinerary, days: newDays });
     setSelectedDay(newDays.length - 1);
     setEditingId(null);
   };
@@ -164,9 +163,9 @@ export default function PlanEditPage() {
   const removeDay = (index: number) => {
     if (!itinerary || itinerary.days.length <= 1) return;
     const newDays = itinerary.days.filter((_, i) => i !== index);
-    const next = { ...itinerary, days: newDays };
-    setItinerary(next);
-    setSelectedDay((prev) => Math.min(prev, newDays.length - 1));
+    const newSelected = Math.min(selectedDay, newDays.length - 1);
+    setItinerary({ ...itinerary, days: newDays });
+    setSelectedDay(newSelected);
     setEditingId(null);
     setDeletingDayIndex(null);
   };
@@ -205,14 +204,16 @@ export default function PlanEditPage() {
     try {
       const { toPng } = await import("html-to-image");
       const el = timelineRef.current;
-      const pad = 40;
-      setPreviewUrl(await toPng(el, {
-        backgroundColor: "#FFFBF5",
-        pixelRatio: 2,
-        width: el.scrollWidth + pad * 2,
-        height: el.scrollHeight + pad * 2,
-        style: { padding: `${pad}px`, boxSizing: "content-box" },
-      }));
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = "padding:40px;background:#FFFBF5;display:inline-block;";
+      const clone = el.cloneNode(true) as HTMLElement;
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      try {
+        setPreviewUrl(await toPng(wrapper, { backgroundColor: "#FFFBF5", pixelRatio: 2 }));
+      } finally {
+        document.body.removeChild(wrapper);
+      }
     } finally { setExporting(false); }
   };
 
@@ -272,8 +273,8 @@ export default function PlanEditPage() {
     </main>
   );
 
-  const currentDayIndex = Math.min(selectedDay, itinerary.days.length - 1);
-  const currentDay = itinerary.days[currentDayIndex] ?? itinerary.days[0];
+  // selectedDayとitineraryは常に同時に更新されるので不整合は起きない
+  const currentDay = itinerary.days[selectedDay] ?? itinerary.days[0];
   const dayView = { title: itinerary.title, date: currentDay.date, items: currentDay.items };
 
   return (
@@ -330,7 +331,7 @@ export default function PlanEditPage() {
                     <button
                       onClick={() => { setSelectedDay(i); setEditingId(null); }}
                       className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
-                        currentDayIndex === i
+                        selectedDay === i
                           ? "bg-sky-500 text-white shadow-sm"
                           : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
                       }`}
@@ -363,7 +364,7 @@ export default function PlanEditPage() {
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-            {currentDayIndex + 1}日目のタイムライン — {currentDay.items.length}コマ
+            {selectedDay + 1}日目のタイムライン — {currentDay.items.length}コマ
           </p>
           <TimelineView
             ref={timelineRef}

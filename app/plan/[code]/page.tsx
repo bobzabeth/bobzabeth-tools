@@ -47,14 +47,17 @@ export default function PlanViewPage() {
     try {
       const { toPng } = await import("html-to-image");
       const el = timelineRef.current;
-      const pad = 40;
-      setPreviewUrl(await toPng(el, {
-        backgroundColor: "#FFFBF5",
-        pixelRatio: 2,
-        width: el.scrollWidth + pad * 2,
-        height: el.scrollHeight + pad * 2,
-        style: { padding: `${pad}px`, boxSizing: "content-box" },
-      }));
+      // ラッパーdivを作って余白を付けてからキャプチャ
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = "padding:40px;background:#FFFBF5;display:inline-block;";
+      const clone = el.cloneNode(true) as HTMLElement;
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      try {
+        setPreviewUrl(await toPng(wrapper, { backgroundColor: "#FFFBF5", pixelRatio: 2 }));
+      } finally {
+        document.body.removeChild(wrapper);
+      }
     } finally { setExporting(false); }
   };
 
