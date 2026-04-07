@@ -305,7 +305,7 @@ export default function PlanEditPage() {
             </span>
             <a href={`/plan/${code}`}
               className="flex-shrink-0 border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold px-3 py-1.5 rounded-2xl transition-all text-xs bg-white/80 backdrop-blur-sm shadow-sm">
-              👁 閲覧
+              編集完了
             </a>
           </div>
         </div>
