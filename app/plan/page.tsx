@@ -61,11 +61,11 @@ export default function PlanPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
           <h1 className="text-3xl font-extrabold tracking-tight">
             <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">
-              おでかけプランナー
+              イイ感じ旅のしおりくん
             </span>
           </h1>
           <p className="text-slate-500 text-sm">
-            旅行・日帰り・イベントの流れをかんたんにまとめてシェアしよう
+            旅行・日帰り・イベントの旅のしおりをかんたんに作ってシェアしよう
           </p>
         </div>
 

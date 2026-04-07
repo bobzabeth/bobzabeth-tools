@@ -12,7 +12,7 @@ export default function PlanFooter({ showMyPlan = true }: { showMyPlan?: boolean
         ← ツール一覧に戻る
       </a>
       <div className="text-center pt-2 space-y-1">
-        <p className="text-[11px] text-slate-300 font-medium">おでかけプランナー</p>
+        <p className="text-[11px] text-slate-300 font-medium">イイ感じ旅のしおりくん</p>
         <p className="text-[10px] text-slate-200">© 2025 bobzabeth. All rights reserved.</p>
       </div>
     </footer>

@@ -40,7 +40,7 @@ export default function PlanViewPage() {
   };
 
   const handleXShare = () => {
-    const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+    const text = "旅のしおりがかんたんに作れるアプリ「イイ感じ旅のしおりくん」見つけたよ！みんなも使ってみてね！ #イイ感じ旅のしおりくん";
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`${window.location.origin}/plan`)}`, "_blank");
   };
 
@@ -109,7 +109,7 @@ export default function PlanViewPage() {
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
         <div className="px-2 pt-2 flex items-center justify-between gap-3">
-          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">おでかけプランナー</a>
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">イイ感じ旅のしおりくん</a>
           <button onClick={() => router.push(`/plan/${code}/edit`)}
             className="flex-shrink-0 border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold px-4 py-2 rounded-2xl transition-all active:scale-95 flex items-center gap-1.5 text-xs bg-white/80 backdrop-blur-sm shadow-sm">
             ✏️ 編集

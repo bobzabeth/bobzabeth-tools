@@ -139,7 +139,7 @@ export default function DemoPlanPage() {
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
         <div className="px-2 pt-2 flex items-center justify-between gap-3">
-          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">おでかけプランナー</a>
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">イイ感じ旅のしおりくん</a>
           <span className="text-[10px] bg-amber-100 text-amber-600 font-bold px-3 py-1 rounded-full">使用例</span>
         </div>
 
@@ -192,7 +192,7 @@ export default function DemoPlanPage() {
               </button>
               <button
                 onClick={() => {
-                  const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+                  const text = "旅のしおりがかんたんに作れるアプリ「イイ感じ旅のしおりくん」見つけたよ！みんなも使ってみてね！ #イイ感じ旅のしおりくん";
                   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin + "/plan" : "/plan")}`, "_blank");
                 }}
                 className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg">

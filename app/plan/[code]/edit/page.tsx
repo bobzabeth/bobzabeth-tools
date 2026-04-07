@@ -196,7 +196,7 @@ export default function PlanEditPage() {
   };
 
   const handleXShare = () => {
-    const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+    const text = "旅のしおりがかんたんに作れるアプリ「イイ感じ旅のしおりくん」見つけたよ！みんなも使ってみてね！ #イイ感じ旅のしおりくん";
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`${window.location.origin}/plan`)}`, "_blank");
   };
 
@@ -298,7 +298,7 @@ export default function PlanEditPage() {
 
         {/* ヘッダー */}
         <div className="px-2 pt-2 flex items-center justify-between gap-2">
-          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity flex-shrink-0">おでかけプランナー</a>
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity flex-shrink-0">イイ感じ旅のしおりくん</a>
           <div className="flex items-center gap-2 ml-auto">
             <span className="text-xs text-slate-400">
               {saveStatus === "saving" ? "保存中..." : saveStatus === "saved" ? "✓ 保存済み" : ""}

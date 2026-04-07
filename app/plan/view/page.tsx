@@ -161,7 +161,7 @@ export default function ViewPage() {
       <div className="relative max-w-xl mx-auto px-4 py-12">
         <div className="mb-4 text-center">
           <span className="inline-block bg-sky-100 text-sky-600 text-xs font-bold px-3 py-1 rounded-full tracking-wide">
-            おでかけプランナー
+            イイ感じ旅のしおりくん
           </span>
         </div>
 
