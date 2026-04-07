@@ -198,22 +198,38 @@ export default function PlanViewPage() {
         <PlanFooter />
       </div>
 
-      {/* 画像export用の隠しレンダリング領域（bg無し・blur無しのクリーンな表示） */}
+      {/* 画像export用の隠しレンダリング領域（全日程縦並び） */}
       <div style={{ position: "fixed", left: "-9999px", top: 0, pointerEvents: "none" }}>
         <div ref={exportRef} style={{ background: "#FFFBF5", padding: "40px", width: "480px" }}>
           {itinerary && (
             <>
-              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              {/* タイトル */}
+              <div style={{ textAlign: "center", marginBottom: "32px" }}>
                 <p style={{ fontSize: "22px", fontWeight: 900, color: "#1e293b", margin: 0 }}>
                   {itinerary.title || "タイトル未設定"}
                 </p>
-                {currentDay.date && (
-                  <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
-                    {new Date(currentDay.date + "T00:00:00").toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}
-                  </p>
-                )}
               </div>
-              <TimelineView itinerary={dayView} exportMode hideHeader />
+              {/* 全日程 */}
+              {itinerary.days.map((day, i) => (
+                <div key={i} style={{ marginBottom: i < itinerary.days.length - 1 ? "40px" : 0 }}>
+                  {/* 日付ヘッダー */}
+                  <div style={{ marginBottom: "12px", paddingBottom: "8px", borderBottom: "2px solid #e0f2fe" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#0ea5e9", letterSpacing: "0.05em" }}>
+                      {i + 1}日目
+                    </span>
+                    {day.date && (
+                      <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px" }}>
+                        {new Date(day.date + "T00:00:00").toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                      </span>
+                    )}
+                  </div>
+                  <TimelineView
+                    itinerary={{ title: itinerary.title, date: day.date, items: day.items }}
+                    exportMode
+                    hideHeader
+                  />
+                </div>
+              ))}
             </>
           )}
         </div>
