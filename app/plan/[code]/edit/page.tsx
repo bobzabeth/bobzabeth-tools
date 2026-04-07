@@ -281,8 +281,10 @@ export default function PlanEditPage() {
     </main>
   );
 
-  // selectedDayとitineraryは常に同時に更新されるので不整合は起きない
-  const currentDay = itinerary.days[selectedDay] ?? itinerary.days[0];
+  // selectedDayをitinerary.daysの範囲内に必ずクランプして表示
+  // （2つのstateが別管理なのでレンダー間で一時的にズレても安全）
+  const displayDay = Math.min(selectedDay, itinerary.days.length - 1);
+  const currentDay = itinerary.days[displayDay];
   const dayView = { title: itinerary.title, date: currentDay.date, items: currentDay.items };
 
   return (
@@ -339,7 +341,7 @@ export default function PlanEditPage() {
                     <button
                       onClick={() => { setSelectedDay(i); setEditingId(null); }}
                       className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
-                        selectedDay === i
+                        displayDay === i
                           ? "bg-sky-500 text-white shadow-sm"
                           : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
                       }`}
@@ -372,7 +374,7 @@ export default function PlanEditPage() {
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-            {selectedDay + 1}日目のタイムライン — {currentDay.items.length}コマ
+            {displayDay + 1}日目のタイムライン — {currentDay.items.length}コマ
           </p>
           <TimelineView
             ref={timelineRef}
