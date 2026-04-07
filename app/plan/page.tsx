@@ -152,7 +152,7 @@ export default function PlanPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">使用例</p>
 
           {/* 例1: 京都2泊3日 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3">
+          <a href="/plan/demo/kyoto" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-black text-slate-800">🏯 京都2泊3日旅行</p>
@@ -173,12 +173,12 @@ export default function PlanPage() {
                   <span>{item.label}</span>
                 </div>
               ))}
-              <p className="text-slate-300 pl-12">…など全11コマ</p>
+              <p className="text-slate-300 pl-12">…など全11コマ · タップして見る →</p>
             </div>
-          </div>
+          </a>
 
           {/* 例2: 子連れ日帰り */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3">
+          <a href="/plan/demo/aquarium" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-black text-slate-800">🎡 子連れ水族館デー</p>
@@ -199,12 +199,12 @@ export default function PlanPage() {
                   <span>{item.label}</span>
                 </div>
               ))}
-              <p className="text-slate-300 pl-12">…など全8コマ</p>
+              <p className="text-slate-300 pl-12">…など全9コマ · タップして見る →</p>
             </div>
-          </div>
+          </a>
 
           {/* 例3: 同窓会 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3">
+          <a href="/plan/demo/reunion" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-black text-slate-800">🍻 同窓会プラン</p>
@@ -225,9 +225,9 @@ export default function PlanPage() {
                   <span>{item.label}</span>
                 </div>
               ))}
-              <p className="text-slate-300 pl-12">…など全6コマ</p>
+              <p className="text-slate-300 pl-12">…など全5コマ · タップして見る →</p>
             </div>
-          </div>
+          </a>
         </div>
 
         <PlanFooter showMyPlan={false} />
