@@ -59,7 +59,7 @@ export default function PlanPage() {
 
         {/* ヘッダー */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 text-center space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight">
+          <h1 className="text-2xl font-extrabold tracking-tight whitespace-nowrap">
             <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">
               イイ感じ旅のしおりくん
             </span>
@@ -81,7 +81,7 @@ export default function PlanPage() {
               作成中...
             </>
           ) : (
-            "＋ 新規おでかけ"
+            "＋ 新規しおり"
           )}
         </button>
 
@@ -94,7 +94,7 @@ export default function PlanPage() {
         {/* マイプラン一覧 */}
         {plans.length > 0 && (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイおでかけ</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイしおり</p>
             {plans.map((plan) => (
               <div key={plan.code}>
                 {deletingCode === plan.code ? (

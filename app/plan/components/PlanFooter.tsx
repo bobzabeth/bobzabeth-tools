@@ -5,7 +5,7 @@ export default function PlanFooter({ showMyPlan = true }: { showMyPlan?: boolean
     <footer className="pb-20 space-y-3">
       {showMyPlan && (
         <a href="/plan" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/80 backdrop-blur-sm shadow-sm">
-          ← マイおでかけ一覧に戻る
+          ← マイしおり一覧に戻る
         </a>
       )}
       <a href="/" className="flex items-center justify-center gap-1.5 w-full border-2 border-slate-100 hover:border-slate-300 text-slate-400 hover:text-slate-600 font-bold py-3 rounded-2xl transition-all text-sm bg-white/60 backdrop-blur-sm">

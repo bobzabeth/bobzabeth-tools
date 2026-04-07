@@ -249,7 +249,7 @@ export default function PlanEditPage() {
       <div className="text-center space-y-4">
         <p className="text-5xl">🗺️</p>
         <p className="font-bold text-slate-700">プランが見つかりません</p>
-        <a href="/plan" className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium">← マイおでかけ一覧へ</a>
+        <a href="/plan" className="inline-block mt-4 text-sm text-sky-500 hover:text-sky-700 font-medium">← マイしおり一覧へ</a>
       </div>
     </main>
   );
