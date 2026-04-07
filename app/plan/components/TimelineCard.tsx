@@ -51,7 +51,9 @@ function ViewCard({ item, exportMode }: { item: Item; exportMode?: boolean }) {
           </div>
           {/* ドット＋縦線列 */}
           <div className="flex-shrink-0 flex flex-col items-center pt-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
+            <div className="w-[18px] h-[18px] rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+            </div>
             {hasEnd && <div className="w-0.5 flex-1 bg-sky-100 mt-1 min-h-[1.5rem]" />}
           </div>
           {/* 内容列 */}
@@ -87,7 +89,9 @@ function ViewCard({ item, exportMode }: { item: Item; exportMode?: boolean }) {
             </div>
             {/* ドット列 */}
             <div className="flex-shrink-0 flex flex-col items-center pt-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-2 ring-sky-100" />
+              <div className="w-[18px] h-[18px] rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+            </div>
             </div>
             {/* 終了メモ列 */}
             <div className="flex-1 min-w-0 pb-1">

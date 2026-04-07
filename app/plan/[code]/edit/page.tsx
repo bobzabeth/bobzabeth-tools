@@ -212,10 +212,23 @@ export default function PlanEditPage() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!previewUrl || !itinerary) return;
+    const filename = `${itinerary.title || "おでかけ"}.png`;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS && navigator.canShare) {
+      try {
+        const res = await fetch(previewUrl);
+        const blob = await res.blob();
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: filename });
+          return;
+        }
+      } catch { /* フォールバックへ */ }
+    }
     const link = document.createElement("a");
-    link.download = `${itinerary.title || "おでかけ"}.png`;
+    link.download = filename;
     link.href = previewUrl;
     link.click();
   };
