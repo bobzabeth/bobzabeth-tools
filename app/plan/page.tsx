@@ -93,47 +93,45 @@ export default function PlanPage() {
 
         {/* マイプラン一覧 */}
         {plans.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">マイしおり</p>
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">マイしおり</p>
             {plans.map((plan) => (
               <div key={plan.code}>
                 {deletingCode === plan.code ? (
-                  <div className="bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 space-y-2">
+                  <div className="bg-red-50 border-2 border-red-200 rounded-3xl px-5 py-4 space-y-3 shadow-xl">
                     <p className="text-sm font-bold text-red-500">「{plan.title || "タイトル未設定"}」を削除しますか？</p>
                     <p className="text-xs text-red-400">この操作は元に戻せません。</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setDeletingCode(null)}
-                        className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-xl text-xs"
+                        className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-2xl text-xs"
                       >
                         キャンセル
                       </button>
                       <button
                         onClick={() => handleDeleteConfirm(plan.code)}
-                        className="flex-1 bg-red-500 text-white font-bold py-2 rounded-xl text-xs"
+                        className="flex-1 bg-red-500 text-white font-bold py-2 rounded-2xl text-xs"
                       >
                         削除する
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <a
-                      href={`/plan/${plan.code}`}
-                      className="flex-1 min-w-0 bg-slate-50 hover:bg-sky-50 border-2 border-slate-100 hover:border-sky-200 rounded-2xl px-4 py-3 transition-all"
-                    >
-                      <p className="font-bold text-slate-700 text-sm truncate">
-                        {plan.title || "タイトル未設定"}
-                      </p>
+                  <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-5 py-4 hover:border-sky-300 transition-all">
+                    <a href={`/plan/${plan.code}`} className="flex-1 min-w-0">
+                      <p className="font-black text-slate-800 truncate">{plan.title || "タイトル未設定"}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
                     </a>
-                    <button
-                      onClick={() => setDeletingCode(plan.code)}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
-                      title="削除"
-                    >
-                      ×
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-slate-300 text-sm">›</span>
+                      <button
+                        onClick={() => setDeletingCode(plan.code)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
+                        title="削除"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -143,7 +141,7 @@ export default function PlanPage() {
 
         {plans.length === 0 && (
           <div className="text-center py-8 text-slate-300 text-sm">
-            まだおでかけがありません
+            まだしおりがありません
           </div>
         )}
 
