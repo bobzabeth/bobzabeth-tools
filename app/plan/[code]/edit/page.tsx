@@ -159,7 +159,6 @@ export default function PlanEditPage() {
       const lastDate = prev.days[prev.days.length - 1]?.date || localDateStr(new Date());
       return { ...prev, days: [...prev.days, { date: addDays(lastDate, 1), items: [] }] };
     });
-    setSelectedDay((prev) => prev + 1);
     setEditingId(null);
   };
 
