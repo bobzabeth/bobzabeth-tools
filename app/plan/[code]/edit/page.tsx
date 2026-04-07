@@ -154,12 +154,12 @@ export default function PlanEditPage() {
   };
 
   const addDay = () => {
-    if (!itinerary) return;
-    const lastDate = itinerary.days[itinerary.days.length - 1]?.date || localDateStr(new Date());
-    const newDate = addDays(lastDate, 1);
-    const newDays = [...itinerary.days, { date: newDate, items: [] }];
-    setItinerary({ ...itinerary, days: newDays });
-    setSelectedDay(newDays.length - 1);
+    setItinerary((prev) => {
+      if (!prev) return prev;
+      const lastDate = prev.days[prev.days.length - 1]?.date || localDateStr(new Date());
+      return { ...prev, days: [...prev.days, { date: addDays(lastDate, 1), items: [] }] };
+    });
+    setSelectedDay((prev) => prev + 1);
     setEditingId(null);
   };
 
