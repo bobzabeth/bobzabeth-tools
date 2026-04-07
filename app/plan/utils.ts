@@ -49,6 +49,7 @@ export const TRANSPORT_ICONS: Record<string, string> = {
   plane: "✈️",
   bike: "🚲",
   motorcycle: "🏍️",
+  taxi: "🚕",
   other: "🔄",
 };
 

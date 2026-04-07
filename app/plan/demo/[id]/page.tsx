@@ -13,12 +13,12 @@ const DEMOS: Record<string, Itinerary> = {
       {
         date: "2025-05-03",
         items: [
-          { id: "k1", startTime: "10:00", name: "京都駅集合・荷物預け", memo: "コインロッカーは中央口付近が空いてることが多い" },
-          { id: "k2", startTime: "11:00", name: "嵐山・竹林の小径", transport: { mode: "train", durationMin: "30分" } },
+          { id: "k1", startTime: "10:00", endTime: "10:30", endMemo: "京都駅出発", name: "京都駅集合・荷物預け", memo: "コインロッカーは中央口付近が空いてることが多い", transport: { mode: "train", durationMin: "30分" } },
+          { id: "k2", startTime: "11:00", name: "嵐山・竹林の小径" },
           { id: "k3", startTime: "12:30", name: "嵐山でランチ", memo: "渡月橋近くの湯豆腐がおすすめ" },
-          { id: "k4", startTime: "14:30", name: "天龍寺・庭園散策", transport: { mode: "walk", durationMin: "5分" } },
+          { id: "k4", startTime: "14:30", name: "天龍寺・庭園散策", transport: { mode: "taxi", durationMin: "30分" } },
           { id: "k5", startTime: "16:30", name: "金閣寺", transport: { mode: "bus", durationMin: "40分" } },
-          { id: "k6", startTime: "18:30", name: "錦市場で夕食・お土産", transport: { mode: "bus", durationMin: "30分" } },
+          { id: "k6", startTime: "18:30", name: "錦市場で夕食・お土産", transport: { mode: "taxi", durationMin: "10分" } },
           { id: "k7", startTime: "20:30", name: "ホテルチェックイン" },
         ],
       },
@@ -173,13 +173,33 @@ export default function DemoPlanPage() {
           <TimelineView ref={null} itinerary={dayView} hideHeader />
         </div>
 
-        {/* 画像保存のみ */}
+        {/* SHARE */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6 space-y-3">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">SHARE</p>
+          <p className="text-[10px] text-slate-400 font-medium text-center">このプランの画像を保存</p>
           <button onClick={handleExport} disabled={exporting}
             className="w-full border-2 border-sky-200 hover:border-sky-400 hover:bg-sky-50/50 disabled:border-slate-100 disabled:text-slate-300 text-sky-500 font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
             {exporting ? <><span className="animate-spin h-4 w-4 border-2 border-sky-400 border-t-transparent rounded-full" />書き出し中...</> : "📷 画像で保存"}
           </button>
+          <div className="border-t border-slate-100 pt-3">
+            <p className="text-[10px] text-slate-400 font-medium text-center mb-3">このツールを紹介する</p>
+            <div className="space-y-2">
+              <button
+                onClick={() => window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin + "/plan" : "/plan")}`, "_blank")}
+                style={{ backgroundColor: "#06C755" }}
+                className="w-full text-white font-bold py-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 flex items-center justify-center gap-2 text-sm shadow-lg">
+                <span className="font-black">LINE</span><span>でシェア</span>
+              </button>
+              <button
+                onClick={() => {
+                  const text = "おでかけのスケジュールをかんたんに作れるツール「おでかけプランナー」見つけたよ！みんなも使ってみてね！ #おでかけプランナー";
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin + "/plan" : "/plan")}`, "_blank");
+                }}
+                className="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm shadow-lg">
+                <span className="text-base">𝕏</span><span>でシェア</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 自分も作るCTA */}
