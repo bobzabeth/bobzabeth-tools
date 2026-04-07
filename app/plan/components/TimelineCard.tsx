@@ -45,9 +45,9 @@ function ViewCard({ item, exportMode }: { item: Item; exportMode?: boolean }) {
       <div className="p-5 space-y-0">
         {/* 開始行 */}
         <div className="flex items-start gap-3">
-          {/* 時間列（時間がある場合のみ表示） */}
+          {/* 時間列 */}
           <div className="flex-shrink-0 text-right min-w-[52px]">
-            {item.startTime && <p className="text-sm font-black text-sky-500">{item.startTime}</p>}
+            <p className="text-sm font-black text-sky-500">{item.startTime}</p>
           </div>
           {/* ドット＋縦線列 */}
           <div className="flex-shrink-0 flex flex-col items-center pt-1">
@@ -122,12 +122,12 @@ function EditCard({
   const [draft, setDraft] = useState<Item>(item);
   const [showOptional, setShowOptional] = useState(!!(item.memo || item.mapUrl));
   const [showEnd, setShowEnd] = useState(!!(item.endTime || item.endMemo));
-  const nameRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<HTMLInputElement>(null);
 
-  // 新規コマのときだけイベント名にauto-focus（一度だけ）
+  // 新規コマのときだけ開始時間にauto-focus（一度だけ）
   useEffect(() => {
     if (autoFocus) {
-      nameRef.current?.focus();
+      startTimeRef.current?.focus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -140,31 +140,20 @@ function EditCard({
 
   return (
     <div className="bg-white border-2 border-sky-300 rounded-3xl p-5 shadow-lg space-y-3">
-      {/* 1行目：開始時間（任意） */}
+      {/* 1行目：開始時間 */}
       <div className="flex items-center gap-1.5">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14 flex-shrink-0">開始時間</label>
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide w-14">開始時間</label>
         <input
+          ref={startTimeRef}
           type="time"
           value={draft.startTime}
           onChange={(e) => update({ startTime: e.target.value })}
           className="border-2 border-slate-100 rounded-xl px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-300 bg-slate-50"
         />
-        {draft.startTime && (
-          <button
-            type="button"
-            onClick={() => update({ startTime: "" })}
-            className="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none"
-            title="時間をクリア"
-          >
-            ×
-          </button>
-        )}
-        <span className="text-[10px] text-slate-300 ml-1">任意</span>
       </div>
 
       {/* 2行目：イベント名 */}
       <input
-        ref={nameRef}
         type="text"
         value={draft.name}
         onChange={(e) => update({ name: e.target.value })}

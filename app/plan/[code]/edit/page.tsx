@@ -8,6 +8,7 @@ import {
   updatePlanInDb,
   verifyPlanPassword,
   changePassword,
+  sortItemsByTime,
   updateMyPlanMeta,
   getMyPlans,
 } from "../../utils";
@@ -16,7 +17,7 @@ import FeedbackButton from "../../components/FeedbackButton";
 import PlanFooter from "../../components/PlanFooter";
 
 function newItem(baseTime?: string): Item {
-  return { id: crypto.randomUUID(), startTime: baseTime ?? "", name: "" };
+  return { id: crypto.randomUUID(), startTime: baseTime ?? "09:00", name: "" };
 }
 
 function localDateStr(d: Date): string {
@@ -104,18 +105,6 @@ export default function PlanEditPage() {
     });
   }, [selectedDay]);
 
-  const reorderItems = useCallback((newItems: Item[]) => {
-    setItinerary((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        days: prev.days.map((d, i) =>
-          i === selectedDay ? { ...d, items: newItems } : d
-        ),
-      };
-    });
-  }, [selectedDay]);
-
   const deleteItem = useCallback((id: string) => {
     setItinerary((prev) => {
       if (!prev) return prev;
@@ -143,14 +132,12 @@ export default function PlanEditPage() {
   const addItem = () => {
     if (!itinerary) return;
     const currentItems = itinerary.days[selectedDay]?.items ?? [];
-    let startTime = "";
-    if (currentItems.length > 0) {
-      const last = currentItems[currentItems.length - 1];
-      const baseTime = last.endTime || last.startTime;
-      if (baseTime) {
-        const [h, m] = baseTime.split(":").map(Number);
-        startTime = `${String(Math.min(h + 1, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      }
+    const sorted = sortItemsByTime(currentItems);
+    let startTime = "09:00";
+    if (sorted.length > 0) {
+      const last = sorted[sorted.length - 1];
+      const [h, m] = (last.endTime ?? last.startTime).split(":").map(Number);
+      startTime = `${String(Math.min(h + 1, 23)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     }
     const item = newItem(startTime);
     setItinerary((prev) => {
@@ -395,7 +382,6 @@ export default function PlanEditPage() {
             newItemId={newItemId}
             onUpdate={updateItem}
             onDelete={deleteItem}
-            onReorder={reorderItems}
             onCardClick={(id) => { setNewItemId(null); setEditingId((prev) => prev === id ? null : id); }}
             onClose={() => { setNewItemId(null); setEditingId(null); }}
           />
