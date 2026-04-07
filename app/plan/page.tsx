@@ -151,83 +151,22 @@ export default function PlanPage() {
         <div className="space-y-3">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">使用例</p>
 
-          {/* 例1: 京都2泊3日 */}
-          <a href="/plan/demo/kyoto" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
-            <div className="flex items-center justify-between">
+          {[
+            { href: "/plan/demo/kyoto", emoji: "🏯", title: "京都2泊3日旅行", sub: "3日間 · 友人グループでシェア", badge: "旅行", badgeClass: "bg-sky-100 text-sky-600" },
+            { href: "/plan/demo/aquarium", emoji: "🎡", title: "子連れ水族館デー", sub: "日帰り · 家族でシェア", badge: "日帰り", badgeClass: "bg-emerald-100 text-emerald-600" },
+            { href: "/plan/demo/reunion", emoji: "🍻", title: "大学同窓会プラン", sub: "日帰り · 幹事から参加者に一括シェア", badge: "イベント", badgeClass: "bg-violet-100 text-violet-600" },
+          ].map((ex) => (
+            <a key={ex.href} href={ex.href} className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-5 py-4 hover:border-sky-300 transition-all">
               <div>
-                <p className="font-black text-slate-800">🏯 京都2泊3日旅行</p>
-                <p className="text-xs text-slate-400 mt-0.5">3日間 · 友人グループでシェア</p>
+                <p className="font-black text-slate-800">{ex.emoji} {ex.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{ex.sub}</p>
               </div>
-              <span className="text-[10px] bg-sky-100 text-sky-600 font-bold px-2 py-1 rounded-full">旅行</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-500">
-              {[
-                { time: "10:00", label: "京都駅集合・荷物預け" },
-                { time: "11:00", label: "嵐山・竹林の小径" },
-                { time: "13:30", label: "嵐山でランチ" },
-                { time: "16:00", label: "金閣寺" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-sky-500 font-bold w-10 flex-shrink-0">{item.time}</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-300 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </div>
-              ))}
-              <p className="text-slate-300 pl-12">…など全11コマ · タップして見る →</p>
-            </div>
-          </a>
-
-          {/* 例2: 子連れ日帰り */}
-          <a href="/plan/demo/aquarium" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-black text-slate-800">🎡 子連れ水族館デー</p>
-                <p className="text-xs text-slate-400 mt-0.5">日帰り · 家族でシェア</p>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${ex.badgeClass}`}>{ex.badge}</span>
+                <span className="text-slate-300 text-sm">›</span>
               </div>
-              <span className="text-[10px] bg-emerald-100 text-emerald-600 font-bold px-2 py-1 rounded-full">日帰り</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-500">
-              {[
-                { time: "09:30", label: "自宅出発（授乳済み）" },
-                { time: "10:15", label: "水族館到着・チケット購入" },
-                { time: "12:00", label: "館内のレストランでランチ" },
-                { time: "13:30", label: "イルカショー" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-sky-500 font-bold w-10 flex-shrink-0">{item.time}</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-300 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </div>
-              ))}
-              <p className="text-slate-300 pl-12">…など全9コマ · タップして見る →</p>
-            </div>
-          </a>
-
-          {/* 例3: 同窓会 */}
-          <a href="/plan/demo/reunion" className="block bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5 space-y-3 hover:border-sky-300 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-black text-slate-800">🍻 同窓会プラン</p>
-                <p className="text-xs text-slate-400 mt-0.5">日帰り · 幹事から参加者に一括シェア</p>
-              </div>
-              <span className="text-[10px] bg-violet-100 text-violet-600 font-bold px-2 py-1 rounded-full">イベント</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-slate-500">
-              {[
-                { time: "17:00", label: "渋谷駅ハチ公前に集合" },
-                { time: "17:30", label: "1軒目：居酒屋（2h飲み放題）" },
-                { time: "20:00", label: "2軒目：バー" },
-                { time: "22:00", label: "解散（終電注意！）" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-sky-500 font-bold w-10 flex-shrink-0">{item.time}</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-sky-300 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </div>
-              ))}
-              <p className="text-slate-300 pl-12">…など全5コマ · タップして見る →</p>
-            </div>
-          </a>
+            </a>
+          ))}
         </div>
 
         <PlanFooter showMyPlan={false} />
