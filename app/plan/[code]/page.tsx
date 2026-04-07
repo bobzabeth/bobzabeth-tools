@@ -46,10 +46,14 @@ export default function PlanViewPage() {
     setExporting(true);
     try {
       const { toPng } = await import("html-to-image");
-      setPreviewUrl(await toPng(timelineRef.current, {
+      const el = timelineRef.current;
+      const pad = 40;
+      setPreviewUrl(await toPng(el, {
         backgroundColor: "#FFFBF5",
         pixelRatio: 2,
-        style: { padding: "32px" },
+        width: el.scrollWidth + pad * 2,
+        height: el.scrollHeight + pad * 2,
+        style: { padding: `${pad}px`, boxSizing: "content-box" },
       }));
     } finally { setExporting(false); }
   };
@@ -164,10 +168,12 @@ export default function PlanViewPage() {
 
         {previewUrl && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
-            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4" onClick={(e) => e.stopPropagation()}>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">プレビュー</p>
-              <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
-              <div className="flex gap-3">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center pt-4 px-4 flex-shrink-0">プレビュー</p>
+              <div className="overflow-y-auto flex-1 px-4 py-3">
+                <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
+              </div>
+              <div className="flex gap-3 p-4 flex-shrink-0 border-t border-slate-100">
                 <button onClick={() => setPreviewUrl(null)}
                   className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95">閉じる</button>
                 <button onClick={handleDownload}

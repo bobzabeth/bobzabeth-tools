@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import type { Day, Item, Itinerary } from "../../types";
+import type { Item, Itinerary } from "../../types";
 import {
   loadPlanFromDb,
   updatePlanInDb,
@@ -204,7 +204,15 @@ export default function PlanEditPage() {
     setExporting(true);
     try {
       const { toPng } = await import("html-to-image");
-      setPreviewUrl(await toPng(timelineRef.current, { backgroundColor: "#FFFBF5", pixelRatio: 2 }));
+      const el = timelineRef.current;
+      const pad = 40;
+      setPreviewUrl(await toPng(el, {
+        backgroundColor: "#FFFBF5",
+        pixelRatio: 2,
+        width: el.scrollWidth + pad * 2,
+        height: el.scrollHeight + pad * 2,
+        style: { padding: `${pad}px`, boxSizing: "content-box" },
+      }));
     } finally { setExporting(false); }
   };
 
@@ -264,8 +272,8 @@ export default function PlanEditPage() {
     </main>
   );
 
-  const safeDay = Math.min(selectedDay, itinerary.days.length - 1);
-  const currentDay = itinerary.days[safeDay] ?? itinerary.days[0];
+  const currentDayIndex = Math.min(selectedDay, itinerary.days.length - 1);
+  const currentDay = itinerary.days[currentDayIndex] ?? itinerary.days[0];
   const dayView = { title: itinerary.title, date: currentDay.date, items: currentDay.items };
 
   return (
@@ -322,7 +330,7 @@ export default function PlanEditPage() {
                     <button
                       onClick={() => { setSelectedDay(i); setEditingId(null); }}
                       className={`flex-shrink-0 px-3 py-2.5 rounded-xl text-xs font-black transition-all ${
-                        selectedDay === i
+                        currentDayIndex === i
                           ? "bg-sky-500 text-white shadow-sm"
                           : "bg-slate-100 text-slate-400 hover:bg-sky-50 hover:text-sky-500"
                       }`}
@@ -355,7 +363,7 @@ export default function PlanEditPage() {
         {/* タイムライン */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-6">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-            {safeDay + 1}日目のタイムライン — {currentDay.items.length}コマ
+            {currentDayIndex + 1}日目のタイムライン — {currentDay.items.length}コマ
           </p>
           <TimelineView
             ref={timelineRef}
@@ -456,10 +464,12 @@ export default function PlanEditPage() {
 
         {previewUrl && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
-            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-sm w-full space-y-4 p-4" onClick={(e) => e.stopPropagation()}>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">プレビュー</p>
-              <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
-              <div className="flex gap-3">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center pt-4 px-4 flex-shrink-0">プレビュー</p>
+              <div className="overflow-y-auto flex-1 px-4 py-3">
+                <img src={previewUrl} alt="preview" className="w-full rounded-2xl border border-slate-100" />
+              </div>
+              <div className="flex gap-3 p-4 flex-shrink-0 border-t border-slate-100">
                 <button onClick={() => setPreviewUrl(null)}
                   className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-all active:scale-95">閉じる</button>
                 <button onClick={handleDownload}
