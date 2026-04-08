@@ -25,7 +25,14 @@ export type Day = {
   items: Item[];
 };
 
+export type TodoItem = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
 export type Itinerary = {
   title: string;
   days: Day[];
+  todos?: TodoItem[];
 };

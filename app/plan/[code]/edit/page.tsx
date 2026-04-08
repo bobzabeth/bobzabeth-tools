@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import type { Item, Itinerary } from "../../types";
+import type { Item, Itinerary, TodoItem } from "../../types";
 import {
   loadPlanFromDb,
   updatePlanInDb,
@@ -52,6 +52,8 @@ export default function PlanEditPage() {
   const [isCreator, setIsCreator] = useState(false);
   const [showPwSection, setShowPwSection] = useState(false);
   const [newPw, setNewPw] = useState("");
+  const [showTodos, setShowTodos] = useState(false);
+  const [newTodoText, setNewTodoText] = useState("");
   const [pwStatus, setPwStatus] = useState<"" | "saving" | "saved" | "error">("");
   const timelineRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -117,6 +119,32 @@ export default function PlanEditPage() {
     });
     setEditingId(null);
   }, [selectedDay]);
+
+  const addTodo = () => {
+    const text = newTodoText.trim();
+    if (!text) return;
+    const todo: TodoItem = { id: crypto.randomUUID(), text, done: false };
+    setItinerary((prev) => prev ? { ...prev, todos: [...(prev.todos ?? []), todo] } : prev);
+    setNewTodoText("");
+  };
+
+  const toggleTodo = (id: string) => {
+    setItinerary((prev) => prev ? {
+      ...prev,
+      todos: (prev.todos ?? []).map((t) => t.id === id ? { ...t, done: !t.done } : t),
+    } : prev);
+  };
+
+  const deleteTodo = (id: string) => {
+    setItinerary((prev) => prev ? { ...prev, todos: (prev.todos ?? []).filter((t) => t.id !== id) } : prev);
+  };
+
+  const updateTodoText = (id: string, text: string) => {
+    setItinerary((prev) => prev ? {
+      ...prev,
+      todos: (prev.todos ?? []).map((t) => t.id === id ? { ...t, text } : t),
+    } : prev);
+  };
 
   // DB保存は useEffect で itinerary 変化時に行う（DBロード直後はスキップ）
   useEffect(() => {
@@ -317,6 +345,77 @@ export default function PlanEditPage() {
             placeholder="例：京都旅行"
             className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-slate-700 font-bold text-lg focus:outline-none focus:border-sky-300 bg-slate-50" />
         </div>
+
+        {/* やることリスト */}
+        {(() => {
+          const todos = itinerary.todos ?? [];
+          const remaining = todos.filter((t) => !t.done).length;
+          return (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5">
+              <button
+                onClick={() => setShowTodos((v) => !v)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📋</span>
+                  <span className="text-sm font-bold text-slate-600">やることリスト</span>
+                  {todos.length > 0 && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${remaining === 0 ? "bg-emerald-100 text-emerald-600" : "bg-sky-100 text-sky-600"}`}>
+                      {remaining === 0 ? "全完了 🎉" : `残り ${remaining}件`}
+                    </span>
+                  )}
+                </div>
+                <span className="text-slate-300 text-sm">{showTodos ? "▲" : "▼"}</span>
+              </button>
+
+              {showTodos && (
+                <div className="mt-4 space-y-2">
+                  {todos.map((todo) => (
+                    <div key={todo.id} className="flex items-center gap-2 group">
+                      <button
+                        onClick={() => toggleTodo(todo.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          todo.done ? "bg-emerald-400 border-emerald-400" : "border-slate-300 hover:border-sky-400"
+                        }`}
+                      >
+                        {todo.done && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+                      </button>
+                      <input
+                        type="text"
+                        value={todo.text}
+                        onChange={(e) => updateTodoText(todo.id, e.target.value)}
+                        className={`flex-1 text-sm bg-transparent focus:outline-none ${todo.done ? "line-through text-slate-300" : "text-slate-700"}`}
+                      />
+                      <button
+                        onClick={() => deleteTodo(todo.id)}
+                        className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-slate-200 hover:text-red-400 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-lg leading-none"
+                      >×</button>
+                    </div>
+                  ))}
+
+                  {/* 新規追加行 */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-50">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-dashed border-slate-200" />
+                    <input
+                      type="text"
+                      value={newTodoText}
+                      onChange={(e) => setNewTodoText(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addTodo()}
+                      placeholder="タスクを追加..."
+                      className="flex-1 text-sm text-slate-500 bg-transparent focus:outline-none placeholder:text-slate-300"
+                    />
+                    {newTodoText && (
+                      <button
+                        onClick={addTodo}
+                        className="flex-shrink-0 text-xs bg-sky-500 hover:bg-sky-600 text-white font-bold px-3 py-1 rounded-full transition-all"
+                      >追加</button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* 日付セレクター（独立カード） */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5">
