@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { Itinerary, TodoItem } from "../types";
-import { loadPlanFromDb } from "../utils";
+import type { Itinerary } from "../types";
+import { loadPlanFromDb, updateTodosInDb } from "../utils";
 import TimelineView from "../components/TimelineView";
 import FeedbackButton from "../components/FeedbackButton";
 import PlanFooter from "../components/PlanFooter";
@@ -18,14 +18,14 @@ export default function PlanViewPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState("");
   const [showTodos, setShowTodos] = useState(false);
-  const [checkedTodos, setCheckedTodos] = useState<Set<string>>(new Set());
 
   const toggleViewTodo = (id: string) => {
-    setCheckedTodos((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    if (!itinerary) return;
+    const newTodos = (itinerary.todos ?? []).map((t) =>
+      t.id === id ? { ...t, done: !t.done } : t
+    );
+    setItinerary({ ...itinerary, todos: newTodos });
+    updateTodosInDb(code, newTodos);
   };
   const timelineRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -141,7 +141,7 @@ export default function PlanViewPage() {
         {/* やることリスト（あれば表示） */}
         {(itinerary.todos ?? []).length > 0 && (() => {
           const todos = itinerary.todos!;
-          const remaining = todos.filter((t) => !checkedTodos.has(t.id)).length;
+          const remaining = todos.filter((t) => !t.done).length;
           return (
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 p-5">
               <button
@@ -160,24 +160,21 @@ export default function PlanViewPage() {
 
               {showTodos && (
                 <div className="mt-4 space-y-2">
-                  {todos.map((todo) => {
-                    const done = checkedTodos.has(todo.id);
-                    return (
-                      <div key={todo.id} className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleViewTodo(todo.id)}
-                          className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            done ? "bg-emerald-400 border-emerald-400" : "border-slate-300 hover:border-sky-400"
-                          }`}
-                        >
-                          {done && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
-                        </button>
-                        <span className={`text-sm ${done ? "line-through text-slate-300" : "text-slate-700"}`}>
-                          {todo.text}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {todos.map((todo) => (
+                    <div key={todo.id} className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleViewTodo(todo.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          todo.done ? "bg-emerald-400 border-emerald-400" : "border-slate-300 hover:border-sky-400"
+                        }`}
+                      >
+                        {todo.done && <span className="text-white text-[10px] leading-none font-bold">✓</span>}
+                      </button>
+                      <span className={`text-sm ${todo.done ? "line-through text-slate-300" : "text-slate-700"}`}>
+                        {todo.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

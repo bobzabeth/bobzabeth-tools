@@ -109,6 +109,18 @@ export async function updatePlanInDb(
   return res.ok;
 }
 
+export async function updateTodosInDb(
+  code: string,
+  todos: import("./types").TodoItem[]
+): Promise<boolean> {
+  const res = await fetch(`/api/plans/${code}/todos`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ todos }),
+  });
+  return res.ok;
+}
+
 export async function deletePlanFromDb(code: string): Promise<boolean> {
   const res = await fetch(`/api/plans/${code}`, { method: "DELETE" });
   return res.ok;
