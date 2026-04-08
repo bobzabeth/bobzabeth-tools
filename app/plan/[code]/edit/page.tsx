@@ -388,7 +388,7 @@ export default function PlanEditPage() {
                       />
                       <button
                         onClick={() => deleteTodo(todo.id)}
-                        className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-slate-200 hover:text-red-400 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 text-lg leading-none"
+                        className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
                       >×</button>
                     </div>
                   ))}
