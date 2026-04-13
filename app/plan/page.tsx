@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   getMyPlans,
@@ -19,10 +19,23 @@ export default function PlanPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(false);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
+  const [pastOpen, setPastOpen] = useState(false);
 
   useEffect(() => {
     setPlans(getMyPlans());
   }, []);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const upcomingPlans = useMemo(
+    () => plans.filter((p) => p.date >= today).sort((a, b) => a.date.localeCompare(b.date)),
+    [plans, today]
+  );
+
+  const pastPlans = useMemo(
+    () => plans.filter((p) => p.date < today).sort((a, b) => b.date.localeCompare(a.date)),
+    [plans, today]
+  );
 
   const handleNew = async () => {
     setCreating(true);
@@ -95,47 +108,49 @@ export default function PlanPage() {
         {plans.length > 0 && (
           <div className="space-y-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">マイしおり</p>
-            {plans.map((plan) => (
-              <div key={plan.code}>
-                {deletingCode === plan.code ? (
-                  <div className="bg-red-50 border-2 border-red-200 rounded-3xl px-5 py-4 space-y-3 shadow-xl">
-                    <p className="text-sm font-bold text-red-500">「{plan.title || "タイトル未設定"}」を削除しますか？</p>
-                    <p className="text-xs text-red-400">この操作は元に戻せません。</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setDeletingCode(null)}
-                        className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-2xl text-xs"
-                      >
-                        キャンセル
-                      </button>
-                      <button
-                        onClick={() => handleDeleteConfirm(plan.code)}
-                        className="flex-1 bg-red-500 text-white font-bold py-2 rounded-2xl text-xs"
-                      >
-                        削除する
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 px-5 py-4 hover:border-sky-300 transition-all">
-                    <a href={`/plan/${plan.code}`} className="flex-1 min-w-0">
-                      <p className="font-black text-slate-800 truncate">{plan.title || "タイトル未設定"}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
-                    </a>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-slate-300 text-sm">›</span>
-                      <button
-                        onClick={() => setDeletingCode(plan.code)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
-                        title="削除"
-                      >
-                        ×
-                      </button>
-                    </div>
+
+            {/* 今日以降 */}
+            {upcomingPlans.map((plan) => (
+              <PlanCard
+                key={plan.code}
+                plan={plan}
+                deletingCode={deletingCode}
+                setDeletingCode={setDeletingCode}
+                onDeleteConfirm={handleDeleteConfirm}
+              />
+            ))}
+
+            {/* 過去のしおり（折りたたみ） */}
+            {pastPlans.length > 0 && (
+              <div>
+                <button
+                  onClick={() => setPastOpen((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-slate-400 font-bold px-1 py-1 hover:text-slate-500 transition-colors"
+                >
+                  <span
+                    className="inline-block transition-transform duration-200"
+                    style={{ transform: pastOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+                  >
+                    ›
+                  </span>
+                  過去のしおり（{pastPlans.length}件）
+                </button>
+                {pastOpen && (
+                  <div className="space-y-3 mt-2">
+                    {pastPlans.map((plan) => (
+                      <PlanCard
+                        key={plan.code}
+                        plan={plan}
+                        deletingCode={deletingCode}
+                        setDeletingCode={setDeletingCode}
+                        onDeleteConfirm={handleDeleteConfirm}
+                        past
+                      />
+                    ))}
                   </div>
                 )}
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -192,5 +207,60 @@ export default function PlanPage() {
       </div>
       <FeedbackButton page="plan-home" />
     </main>
+  );
+}
+
+function PlanCard({
+  plan,
+  deletingCode,
+  setDeletingCode,
+  onDeleteConfirm,
+  past,
+}: {
+  plan: MyPlanMeta;
+  deletingCode: string | null;
+  setDeletingCode: (code: string | null) => void;
+  onDeleteConfirm: (code: string) => void;
+  past?: boolean;
+}) {
+  if (deletingCode === plan.code) {
+    return (
+      <div className="bg-red-50 border-2 border-red-200 rounded-3xl px-5 py-4 space-y-3 shadow-xl">
+        <p className="text-sm font-bold text-red-500">「{plan.title || "タイトル未設定"}」を削除しますか？</p>
+        <p className="text-xs text-red-400">この操作は元に戻せません。</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDeletingCode(null)}
+            className="flex-1 border-2 border-slate-200 text-slate-400 font-bold py-2 rounded-2xl text-xs"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={() => onDeleteConfirm(plan.code)}
+            className="flex-1 bg-red-500 text-white font-bold py-2 rounded-2xl text-xs"
+          >
+            削除する
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={`flex items-center justify-between gap-3 backdrop-blur-sm rounded-3xl shadow-xl border px-5 py-4 hover:border-sky-300 transition-all ${past ? "bg-white/50 border-slate-100 opacity-75" : "bg-white/80 border-sky-100"}`}>
+      <a href={`/plan/${plan.code}`} className="flex-1 min-w-0">
+        <p className="font-black text-slate-800 truncate">{plan.title || "タイトル未設定"}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{plan.date}</p>
+      </a>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-slate-300 text-sm">›</span>
+        <button
+          onClick={() => setDeletingCode(plan.code)}
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-all text-lg leading-none"
+          title="削除"
+        >
+          ×
+        </button>
+      </div>
+    </div>
   );
 }
