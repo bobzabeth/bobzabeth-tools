@@ -158,7 +158,7 @@ export async function verifyPlanPassword(
 
 const MY_PLANS_KEY = "my_plans";
 
-export type MyPlanMeta = { code: string; title: string; date: string };
+export type MyPlanMeta = { code: string; title: string; date: string; isOwner?: boolean };
 
 export function getMyPlans(): MyPlanMeta[] {
   try {
@@ -173,10 +173,10 @@ export function getMyPlans(): MyPlanMeta[] {
   }
 }
 
-export function addMyPlan(code: string, title: string, date: string): void {
+export function addMyPlan(code: string, title: string, date: string, isOwner = false): void {
   try {
     const plans = getMyPlans().filter((p) => p.code !== code);
-    localStorage.setItem(MY_PLANS_KEY, JSON.stringify([{ code, title, date }, ...plans]));
+    localStorage.setItem(MY_PLANS_KEY, JSON.stringify([{ code, title, date, isOwner }, ...plans]));
   } catch {
     // localStorage unavailable
   }

@@ -31,7 +31,7 @@ export default function PlanPage() {
       const today = new Date().toISOString().slice(0, 10);
       const itinerary = { title: "", days: [{ date: today, items: [] }] };
       const code = await savePlanToDb(itinerary);
-      addMyPlan(code, "", today);
+      addMyPlan(code, "", today, true);
       router.push(`/plan/${code}/edit`);
     } catch (e) {
       console.error("Failed to create plan:", e);

@@ -65,7 +65,7 @@ export default function PlanEditPage() {
     loadPlanFromDb(code).then((result) => {
       if (!result) { setError(true); return; }
       setItinerary(result.data);
-      setIsCreator(getMyPlans().some((p) => p.code === code));
+      setIsCreator(getMyPlans().some((p) => p.code === code && p.isOwner !== false));
       if (result.hasPassword) {
         setHasPassword(true);
         const saved = sessionStorage.getItem(sessionKey);

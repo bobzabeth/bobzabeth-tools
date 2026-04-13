@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Itinerary } from "../types";
-import { loadPlanFromDb, updateTodosInDb } from "../utils";
+import { loadPlanFromDb, updateTodosInDb, addMyPlan, getMyPlans } from "../utils";
 import TimelineView from "../components/TimelineView";
 import FeedbackButton from "../components/FeedbackButton";
 import PlanFooter from "../components/PlanFooter";
@@ -18,6 +18,17 @@ export default function PlanViewPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState("");
   const [showTodos, setShowTodos] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setSaved(getMyPlans().some((p) => p.code === code));
+  }, [code]);
+
+  const handleSaveToMyPlans = () => {
+    if (!itinerary || saved) return;
+    addMyPlan(code, itinerary.title, itinerary.days[0]?.date ?? "", false);
+    setSaved(true);
+  };
 
   const toggleViewTodo = (id: string) => {
     if (!itinerary) return;
@@ -118,12 +129,25 @@ export default function PlanViewPage() {
 
       <div className="relative max-w-xl mx-auto px-4 py-12 space-y-4">
 
-        <div className="px-2 pt-2 flex items-center justify-between gap-3">
-          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity">イイ感じ旅のしおりくん</a>
-          <button onClick={() => router.push(`/plan/${code}/edit`)}
-            className="flex-shrink-0 border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold px-4 py-2 rounded-2xl transition-all active:scale-95 flex items-center gap-1.5 text-xs bg-white/80 backdrop-blur-sm shadow-sm">
-            ✏️ 編集
-          </button>
+        <div className="px-2 pt-2 flex items-center justify-between gap-2">
+          <a href="/plan" className="text-sm font-extrabold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent tracking-tight hover:opacity-75 transition-opacity flex-shrink-0">イイ感じ旅のしおりくん</a>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={handleSaveToMyPlans}
+              disabled={saved}
+              className={`flex-shrink-0 border-2 font-bold px-3 py-1.5 rounded-2xl transition-all active:scale-95 flex items-center gap-1 text-xs bg-white/80 backdrop-blur-sm shadow-sm ${
+                saved
+                  ? "border-emerald-200 text-emerald-500 cursor-default"
+                  : "border-sky-200 text-sky-500 hover:border-sky-400 hover:bg-sky-50/50"
+              }`}
+            >
+              {saved ? "✓ 追加済み" : "＋ マイしおりに追加"}
+            </button>
+            <button onClick={() => router.push(`/plan/${code}/edit`)}
+              className="flex-shrink-0 border-2 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 text-slate-500 hover:text-sky-600 font-bold px-3 py-1.5 rounded-2xl transition-all active:scale-95 flex items-center gap-1 text-xs bg-white/80 backdrop-blur-sm shadow-sm">
+              ✏️ 編集
+            </button>
+          </div>
         </div>
 
         {/* タイトル */}
