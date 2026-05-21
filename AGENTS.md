@@ -11,4 +11,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # 外部APIを叩くときの注意
 
-- **BoardGameGeek (BGG) XML API は Vercel 等のサーバーIPから 401 "Unauthorized" を返す**ことがあるため、サーバールートではなく**ブラウザ直 fetch**で叩く（BGG は CORS 対応済）。一般に「クラウドIPから弾かれそうな公開API」は同じ方針で。
+- **BoardGameGeek (BGG) XML API は Vercel/AWS等のクラウドIPから 401 "Unauthorized" を返す**。さらにBGG側にCORSヘッダもないのでブラウザ直fetchも `Load failed` で死ぬ。**ブラウザから公開CORSプロキシ (`https://corsproxy.io/?url=...`) 経由で叩く**のが現実解。プロキシはBGGとCORS両方の問題を同時に回避してくれる（プロキシのIPは弾かれてない＆プロキシがCORSヘッダを付与してくれる）。
+- 一般に「クラウドIPから弾かれそうな公開API」 × 「CORSヘッダがないAPI」の組み合わせは同じ方針で。プロキシ依存が嫌なら自前のCloudflare Workersに薄いproxyを立てる。

@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-
-type BggGame = {
-  id: string;
-  hotRank: number;
-  name: string;
-  yearPublished?: number;
-  thumbnail?: string;
-  minPlayers?: number;
-  maxPlayers?: number;
-  averageRating: number;
-  geekRating: number;
-  usersRated: number;
-  bggRank?: number;
-  bestPlayers: string[];
-  recommendedPlayers: string[];
-};
+import {
+  fetchHotGames,
+  type BggGame,
+  type DebugInfo,
+  type FetchError,
+} from "./lib";
 
 type SortKey = "hot" | "geek" | "average";
 type PlayerMode = "best" | "recommended";
@@ -35,12 +25,29 @@ function matchesPlayerCount(list: string[], target: string): boolean {
   return list.some((c) => c === target);
 }
 
+function errorToDebug(e: unknown): Record<string, unknown> {
+  if (e instanceof Error) {
+    const fe = e as FetchError;
+    return {
+      message: e.message,
+      where: fe.where,
+      status: fe.status,
+      bodyPreview: fe.bodyPreview,
+      attempts: fe.attempts,
+      stack: e.stack,
+    };
+  }
+  return { value: String(e) };
+}
+
 export default function BggPage() {
   const [games, setGames] = useState<BggGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [errorDebug, setErrorDebug] = useState<unknown>(null);
-  const [debugInfo, setDebugInfo] = useState<unknown>(null);
+  const [errorDebug, setErrorDebug] = useState<Record<string, unknown> | null>(
+    null
+  );
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [selectedCounts, setSelectedCounts] = useState<string[]>([]);
   const [playerMode, setPlayerMode] = useState<PlayerMode>("best");
   const [sortKey, setSortKey] = useState<SortKey>("geek");
@@ -51,30 +58,17 @@ export default function BggPage() {
     (async () => {
       try {
         setLoading(true);
-        const t0 = performance.now();
-        const res = await fetch("/api/bgg/hot");
-        const elapsed = Math.round(performance.now() - t0);
-        const data = await res.json();
-        console.log("[bgg page] /api/bgg/hot", {
-          status: res.status,
-          elapsedMs: elapsed,
-          data,
-        });
+        const { games, debug, fetchedAt } = await fetchHotGames();
         if (cancelled) return;
-        if (!res.ok) {
-          setErrorDebug(data?.debug ?? null);
-          throw new Error(
-            data?.error || `取得に失敗しました (HTTP ${res.status})`
-          );
-        }
-        setGames(data.games ?? []);
-        setFetchedAt(data.fetchedAt ?? "");
-        setDebugInfo(data.debug ?? null);
+        setGames(games);
+        setDebugInfo(debug);
+        setFetchedAt(fetchedAt);
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : "予期しないエラー";
           setError(msg);
-          console.error("[bgg page] fetch error", e);
+          setErrorDebug(errorToDebug(e));
+          console.error("[bgg page] fetchHotGames error", e);
         }
       } finally {
         if (!cancelled) setLoading(false);
