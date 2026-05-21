@@ -2,7 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { fetchHotGames, type BggGame, type DebugInfo, type FetchError } from "./lib";
+
+type BggGame = {
+  id: string;
+  hotRank: number;
+  name: string;
+  yearPublished?: number;
+  thumbnail?: string;
+  minPlayers?: number;
+  maxPlayers?: number;
+  averageRating: number;
+  geekRating: number;
+  usersRated: number;
+  bggRank?: number;
+  bestPlayers: string[];
+  recommendedPlayers: string[];
+};
 
 type SortKey = "hot" | "geek" | "average";
 type PlayerMode = "best" | "recommended";
@@ -20,28 +35,12 @@ function matchesPlayerCount(list: string[], target: string): boolean {
   return list.some((c) => c === target);
 }
 
-function errorToDebug(e: unknown): Record<string, unknown> {
-  if (e instanceof Error) {
-    const fe = e as FetchError;
-    return {
-      message: e.message,
-      where: fe.where,
-      status: fe.status,
-      bodyPreview: fe.bodyPreview,
-      stack: e.stack,
-    };
-  }
-  return { value: String(e) };
-}
-
 export default function BggPage() {
   const [games, setGames] = useState<BggGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [errorDebug, setErrorDebug] = useState<Record<string, unknown> | null>(
-    null
-  );
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const [errorDebug, setErrorDebug] = useState<unknown>(null);
+  const [debugInfo, setDebugInfo] = useState<unknown>(null);
   const [selectedCounts, setSelectedCounts] = useState<string[]>([]);
   const [playerMode, setPlayerMode] = useState<PlayerMode>("best");
   const [sortKey, setSortKey] = useState<SortKey>("geek");
@@ -52,17 +51,30 @@ export default function BggPage() {
     (async () => {
       try {
         setLoading(true);
-        const { games, debug, fetchedAt } = await fetchHotGames();
+        const t0 = performance.now();
+        const res = await fetch("/api/bgg/hot");
+        const elapsed = Math.round(performance.now() - t0);
+        const data = await res.json();
+        console.log("[bgg page] /api/bgg/hot", {
+          status: res.status,
+          elapsedMs: elapsed,
+          data,
+        });
         if (cancelled) return;
-        setGames(games);
-        setDebugInfo(debug);
-        setFetchedAt(fetchedAt);
+        if (!res.ok) {
+          setErrorDebug(data?.debug ?? null);
+          throw new Error(
+            data?.error || `取得に失敗しました (HTTP ${res.status})`
+          );
+        }
+        setGames(data.games ?? []);
+        setFetchedAt(data.fetchedAt ?? "");
+        setDebugInfo(data.debug ?? null);
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : "予期しないエラー";
           setError(msg);
-          setErrorDebug(errorToDebug(e));
-          console.error("[bgg page] fetchHotGames error", e);
+          console.error("[bgg page] fetch error", e);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -251,11 +263,11 @@ export default function BggPage() {
                 <code className="bg-rose-100 px-1 rounded">[bgg]</code>{" "}
                 プレフィックス付きで詳細ログが出力されています。
               </p>
-              {errorDebug && (
+              {errorDebug != null ? (
                 <pre className="mt-3 text-[10px] bg-white border border-rose-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">
                   {JSON.stringify(errorDebug, null, 2)}
                 </pre>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -365,7 +377,7 @@ export default function BggPage() {
             </>
           )}
 
-          {debugInfo && (
+          {debugInfo != null ? (
             <details className="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs">
               <summary className="cursor-pointer font-bold text-slate-600">
                 🐛 デバッグ情報
@@ -374,7 +386,7 @@ export default function BggPage() {
                 {JSON.stringify(debugInfo, null, 2)}
               </pre>
             </details>
-          )}
+          ) : null}
         </section>
 
         <footer className="mt-12 pt-6 border-t border-slate-200 text-xs text-slate-400 text-center space-y-1">
