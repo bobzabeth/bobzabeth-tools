@@ -39,25 +39,50 @@ export default function BggPage() {
   const [games, setGames] = useState<BggGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorDebug, setErrorDebug] = useState<unknown>(null);
   const [selectedCounts, setSelectedCounts] = useState<string[]>([]);
   const [playerMode, setPlayerMode] = useState<PlayerMode>("best");
   const [sortKey, setSortKey] = useState<SortKey>("geek");
   const [fetchedAt, setFetchedAt] = useState<string>("");
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<unknown>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setDebugMode(new URLSearchParams(window.location.search).get("debug") === "1");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/bgg/hot");
+        const qs = debugMode ? "?debug=1" : "";
+        const t0 = performance.now();
+        const res = await fetch(`/api/bgg/hot${qs}`);
         const data = await res.json();
+        const elapsed = Math.round(performance.now() - t0);
         if (cancelled) return;
-        if (!res.ok) throw new Error(data.error || "取得に失敗しました");
+        if (debugMode) {
+          console.log("[bgg page] /api/bgg/hot response", {
+            status: res.status,
+            elapsedMs: elapsed,
+            data,
+          });
+        }
+        if (!res.ok) {
+          setErrorDebug(data?.debug ?? null);
+          throw new Error(data.error || `取得に失敗しました (HTTP ${res.status})`);
+        }
         setGames(data.games ?? []);
         setFetchedAt(data.fetchedAt ?? "");
+        if (debugMode) setDebugInfo(data.debug ?? null);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "予期しないエラー");
+          const msg = e instanceof Error ? e.message : "予期しないエラー";
+          setError(msg);
+          console.error("[bgg page] fetch error", e);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -66,7 +91,7 @@ export default function BggPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [debugMode]);
 
   const togglePlayerCount = (c: string) => {
     setSelectedCounts((prev) =>
@@ -239,7 +264,24 @@ export default function BggPage() {
 
           {error && !loading && (
             <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 text-sm text-rose-700">
-              {error}
+              <p className="font-bold mb-1">エラー</p>
+              <p className="break-all">{error}</p>
+              <p className="mt-2 text-xs text-rose-500">
+                ヒント: URLに <code className="bg-rose-100 px-1 rounded">?debug=1</code>{" "}
+                を付けると詳細が表示されます。サーバー側ログも{" "}
+                <code className="bg-rose-100 px-1 rounded">[bgg/hot]</code>{" "}
+                プレフィックスで出力中。
+              </p>
+              {errorDebug !== null && errorDebug !== undefined ? (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs font-bold">
+                    デバッグ詳細を表示
+                  </summary>
+                  <pre className="mt-2 text-[10px] bg-white border border-rose-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(errorDebug, null, 2)}
+                  </pre>
+                </details>
+              ) : null}
             </div>
           )}
 
@@ -348,6 +390,17 @@ export default function BggPage() {
               )}
             </>
           )}
+
+          {debugMode && debugInfo !== null && debugInfo !== undefined ? (
+            <details className="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs">
+              <summary className="cursor-pointer font-bold text-slate-600">
+                🐛 デバッグ情報（?debug=1）
+              </summary>
+              <pre className="mt-2 text-[10px] bg-white border border-slate-100 rounded p-2 overflow-x-auto whitespace-pre-wrap">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </details>
+          ) : null}
         </section>
 
         <footer className="mt-12 pt-6 border-t border-slate-200 text-xs text-slate-400 text-center space-y-1">

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const revalidate = 3600;
 
@@ -30,24 +30,56 @@ export type BggGame = {
   recommendedPlayers: string[];
 };
 
-async function fetchWithRetry(url: string, maxRetries = 4): Promise<string> {
+const LOG_PREFIX = "[bgg/hot]";
+const isDev = process.env.NODE_ENV !== "production";
+
+async function fetchWithRetry(
+  url: string,
+  label: string,
+  maxRetries = 4
+): Promise<string> {
   let lastStatus = 0;
+  let lastBodyPreview = "";
   for (let i = 0; i < maxRetries; i++) {
+    const t0 = Date.now();
     const res = await fetch(url, {
       next: { revalidate: 3600 },
       headers: { "User-Agent": "bobzabeth-tools/1.0" },
     });
     lastStatus = res.status;
+    const elapsed = Date.now() - t0;
+    console.log(
+      `${LOG_PREFIX} fetch ${label} attempt=${i + 1} status=${res.status} time=${elapsed}ms url=${url}`
+    );
     if (res.status === 200) {
       return await res.text();
     }
+    // 中身を少し読んでデバッグに残す
+    try {
+      lastBodyPreview = (await res.text()).slice(0, 200);
+    } catch {
+      lastBodyPreview = "(body read failed)";
+    }
+    console.warn(
+      `${LOG_PREFIX} non-200 body preview: ${lastBodyPreview.replace(/\s+/g, " ")}`
+    );
     if (res.status === 202 || res.status === 429 || res.status >= 500) {
       await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
       continue;
     }
-    throw new Error(`BGG API error: ${res.status}`);
+    const err = new Error(`BGG ${label} returned ${res.status}`);
+    (err as Error & { where?: string; bodyPreview?: string }).where = label;
+    (err as Error & { where?: string; bodyPreview?: string }).bodyPreview =
+      lastBodyPreview;
+    throw err;
   }
-  throw new Error(`BGG API timeout (last status: ${lastStatus})`);
+  const err = new Error(
+    `BGG ${label} retries exhausted (last status: ${lastStatus})`
+  );
+  (err as Error & { where?: string; bodyPreview?: string }).where = label;
+  (err as Error & { where?: string; bodyPreview?: string }).bodyPreview =
+    lastBodyPreview;
+  throw err;
 }
 
 function parseHot(xml: string): string[] {
@@ -75,6 +107,8 @@ function attr(block: string, name: string): string | undefined {
 
 function parseThing(xml: string): BggGame[] {
   const games: BggGame[] = [];
+  let withoutPoll = 0;
+  let withoutName = 0;
   for (const m of xml.matchAll(/<item\s+type="boardgame"[\s\S]*?<\/item>/g)) {
     const block = m[0];
     const headEnd = block.indexOf(">");
@@ -92,6 +126,7 @@ function parseThing(xml: string): BggGame[] {
         }
       }
     }
+    if (!name) withoutName++;
 
     const yearM = block.match(/<yearpublished\s+value="(-?\d+)"/);
     const yearPublished = yearM ? parseInt(yearM[1]) : undefined;
@@ -147,6 +182,7 @@ function parseThing(xml: string): BggGame[] {
         polls.push({ count, best, recommended, notRecommended });
       }
     }
+    if (polls.length === 0) withoutPoll++;
 
     const bestPlayers: string[] = [];
     const recommendedPlayers: string[] = [];
@@ -178,30 +214,83 @@ function parseThing(xml: string): BggGame[] {
       recommendedPlayers,
     });
   }
+  if (withoutPoll > 0) {
+    console.warn(
+      `${LOG_PREFIX} parseThing: ${withoutPoll}/${games.length} games had no suggested_numplayers poll`
+    );
+  }
+  if (withoutName > 0) {
+    console.warn(
+      `${LOG_PREFIX} parseThing: ${withoutName}/${games.length} games had no primary name`
+    );
+  }
   return games;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const debug = req.nextUrl.searchParams.get("debug") === "1";
+  const startedAt = Date.now();
+  console.log(`${LOG_PREFIX} GET start debug=${debug}`);
+
   try {
-    const hotXml = await fetchWithRetry(HOT_URL);
+    const hotXml = await fetchWithRetry(HOT_URL, "hot");
     const ids = parseHot(hotXml);
+    console.log(`${LOG_PREFIX} parsed ${ids.length} hot IDs`);
     if (ids.length === 0) {
-      return NextResponse.json({ games: [] });
+      return NextResponse.json({
+        games: [],
+        warning: "Hot list returned 0 items",
+      });
     }
-    const thingXml = await fetchWithRetry(THING_URL(ids.join(",")));
+    const thingXml = await fetchWithRetry(THING_URL(ids.join(",")), "thing");
     const games = parseThing(thingXml);
+    console.log(
+      `${LOG_PREFIX} parsed ${games.length} games (expected ${ids.length})`
+    );
 
     const order = new Map(ids.map((id, i) => [id, i]));
     games.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
     games.forEach((g, i) => (g.hotRank = i + 1));
 
-    return NextResponse.json({ games, fetchedAt: new Date().toISOString() });
+    const elapsed = Date.now() - startedAt;
+    console.log(`${LOG_PREFIX} GET done in ${elapsed}ms`);
+
+    const body: Record<string, unknown> = {
+      games,
+      fetchedAt: new Date().toISOString(),
+    };
+    if (debug) {
+      body.debug = {
+        elapsedMs: elapsed,
+        hotIdCount: ids.length,
+        gamesCount: games.length,
+        gamesWithoutPoll: games.filter((g) => g.polls.length === 0).length,
+        sampleId: ids[0],
+        hotXmlPreview: hotXml.slice(0, 300),
+        thingXmlPreview: thingXml.slice(0, 500),
+      };
+    }
+    return NextResponse.json(body);
   } catch (error) {
-    console.error("BGG API error:", error);
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json(
-      { error: `BGGからのデータ取得に失敗しました: ${message}` },
-      { status: 500 }
+    const elapsed = Date.now() - startedAt;
+    const e = error as Error & { where?: string; bodyPreview?: string };
+    console.error(
+      `${LOG_PREFIX} GET FAILED after ${elapsed}ms where=${e.where ?? "unknown"} msg=${e.message}`
     );
+    if (e.stack) console.error(e.stack);
+
+    const payload: Record<string, unknown> = {
+      error: `BGGからのデータ取得に失敗しました: ${e.message}`,
+    };
+    if (isDev || debug) {
+      payload.debug = {
+        where: e.where ?? "unknown",
+        message: e.message,
+        bodyPreview: e.bodyPreview,
+        stack: e.stack,
+        elapsedMs: elapsed,
+      };
+    }
+    return NextResponse.json(payload, { status: 500 });
   }
 }
