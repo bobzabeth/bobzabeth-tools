@@ -1,0 +1,10 @@
+name = "bgg-proxy"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+
+# wrangler CLIでデプロイする場合:
+#   cd workers/bgg-proxy
+#   npx wrangler login    # 初回のみ。ブラウザでCloudflare認証
+#   npx wrangler deploy   # デプロイ。URLが表示される
+#
+# Dashboard派の人は README.md 参照。

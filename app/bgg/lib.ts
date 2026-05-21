@@ -50,8 +50,13 @@ export type FetchError = Error & {
 };
 
 // BGGはVercel/AWS等のクラウドIPを401で弾く＆BGG側にCORSヘッダもない
-// → ブラウザから公開CORSプロキシ(corsproxy.io)経由で叩く
-const PROXY = "https://corsproxy.io/?url=";
+// → ブラウザからプロキシ経由でBGGを叩く
+// 本番: 自前のCloudflare Workers proxy (NEXT_PUBLIC_BGG_PROXY_URLで指定)
+// 未設定時: corsproxy.io (localhostでは無料、本番URLからは403)
+//
+// Worker のデプロイ手順は workers/bgg-proxy/README.md 参照
+const PROXY =
+  process.env.NEXT_PUBLIC_BGG_PROXY_URL || "https://corsproxy.io/?url=";
 const HOT_URL = "https://boardgamegeek.com/xmlapi2/hot?type=boardgame";
 const THING_URL = (ids: string) =>
   `https://boardgamegeek.com/xmlapi2/thing?id=${ids}&stats=1`;
