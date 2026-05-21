@@ -30,6 +30,18 @@ const TOOLS = [
     border: "border-sky-100",
     tagColor: "bg-sky-100 text-sky-700",
   },
+  {
+    id: "bgg",
+    emoji: "🎲",
+    name: "BGGベスト人数フィルタ",
+    desc: "BoardGameGeekのHot 50を、コミュニティ投票のベスト人数やレートで絞り込み・並び替えできるよ。",
+    tags: ["ボードゲーム", "BGG", "ランキング"],
+    url: "/bgg",
+    color: "from-orange-400 to-rose-500",
+    bg: "bg-orange-50",
+    border: "border-orange-100",
+    tagColor: "bg-orange-100 text-orange-700",
+  },
   // 今後のツールはここに追加してね👇
 ];
 

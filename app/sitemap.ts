@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/privacy',   // プライバシーポリシー
     '/contact',   // お問い合わせ
     '/keigo',     // イイ感じ敬語くん
+    '/bgg',       // BGGベスト人数フィルタ
   ]
 
   return staticRoutes.map((route) => ({
