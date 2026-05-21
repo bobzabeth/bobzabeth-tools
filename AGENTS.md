@@ -7,4 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Workflow
 
 - 変更したら毎回プルリクを作る（feature ブランチに push → `gh`/MCP で PR を立てる）。bobzabeth がローカルでプルして検証する流れ。
-- 検証時にデバッグしやすいよう、API ルートには十分な `console.log` / `console.error` を残し、エラーレスポンスには本番以外で `stack` や `where` 情報を含める。
+- デバッグ情報はトグル不要・**常時出力**（`?debug=1` のような明示フラグは作らない）。`console.log` / `console.error` は `[ツール名]` プレフィックスで残し、エラー画面にも詳細JSONを `<details>` で展開できるようにする。
+
+# 外部APIを叩くときの注意
+
+- **BoardGameGeek (BGG) XML API は Vercel 等のサーバーIPから 401 "Unauthorized" を返す**ことがあるため、サーバールートではなく**ブラウザ直 fetch**で叩く（BGG は CORS 対応済）。一般に「クラウドIPから弾かれそうな公開API」は同じ方針で。
