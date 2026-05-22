@@ -17,14 +17,14 @@ BoardGameGeek XML API を叩くための薄いプロキシ。CloudflareのIPか�
    - https://dash.cloudflare.com/sign-up にメアドだけで登録（無料・カード不要）
 
 2. **Workerを作成**
-   - ダッシュボード → 左メニュー「Workers & Pages」
-   - 「Create application」→「Create Worker」
-   - 名前を `bgg-proxy` などにして「Deploy」（デフォルトHello Worldが立つ）
+   - ダッシュボード → 左メニュー「Workers & Pages」→「Create application」
+   - 「Start with Hello World!」を選択（=Worker新規作成）
+   - 名前を `bgg-proxy` などにして Create / Deploy（デフォルトHello Worldが立つ）
 
 3. **コードを差し替え**
-   - Workerページの「Edit code」をクリック
+   - Workerページで「Edit code」または「Quick edit」をクリック
    - 左ペインのコードを全削除して、本リポジトリの [`src/index.js`](./src/index.js) の中身をコピペ
-   - 右上「Save and Deploy」
+   - 右上「Save and Deploy」（または `Deploy`）
 
 4. **URLをコピー**
    - Workerのトップに `https://bgg-proxy.<あなたのサブドメイン>.workers.dev` というURLが表示される
