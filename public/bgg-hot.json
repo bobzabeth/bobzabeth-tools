@@ -1,0 +1,5 @@
+{
+  "games": [],
+  "fetchedAt": "1970-01-01T00:00:00.000Z",
+  "_note": "このファイルは npm run fetch:bgg で更新されます。bobzabethのローカルPCから実行してください（クラウドIPからはBGGに401で弾かれる）。"
+}

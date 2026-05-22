@@ -11,5 +11,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # 外部APIを叩くときの注意
 
-- **BoardGameGeek (BGG) XML API は Vercel/AWS等のクラウドIPから 401 "Unauthorized" を返す**。さらにBGG側にCORSヘッダもないのでブラウザ直fetchも `Load failed` で死ぬ。**ブラウザから公開CORSプロキシ (`https://corsproxy.io/?url=...`) 経由で叩く**のが現実解。プロキシはBGGとCORS両方の問題を同時に回避してくれる（プロキシのIPは弾かれてない＆プロキシがCORSヘッダを付与してくれる）。
-- 一般に「クラウドIPから弾かれそうな公開API」 × 「CORSヘッダがないAPI」の組み合わせは同じ方針で。プロキシ依存が嫌なら自前のCloudflare Workersに薄いproxyを立てる。
+- **BoardGameGeek (BGG) XML API は全方位ブロック済み**: Vercel/AWS/Cloudflare Workers 等のクラウドIPは401で弾かれ、ブラウザ直fetchはCORSヘッダ無しで死に、`corsproxy.io` 等の公開プロキシも本番URLから403で弾く。**結論: ローカル(自宅IP)で取得して静的JSONとしてリポジトリに同梱する方式に決定**。
+- 実装: `scripts/fetch-bgg.mjs` をローカルで実行 (`npm run fetch:bgg`) → `public/bgg-hot.json` 生成 → commit&push で Vercel に反映。アプリ (`app/bgg/lib.ts`) は静的JSONを読むだけ。
+- 一般に「クラウドIPから弾かれる公開API」 × 「CORSヘッダがないAPI」はこの静的JSON方式で。リアルタイム性が必要なAPIには使えない。
