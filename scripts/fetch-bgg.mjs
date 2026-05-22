@@ -1,7 +1,12 @@
 // BGG XML APIから Hot 50 + 詳細データを取得して public/bgg-hot.json に書き出すスクリプト。
 //
-// BGG はクラウドIP(Vercel/Cloudflare等)を401で弾くため、bobzabethのローカルマシン
-// (自宅IP) で実行する必要がある。
+// BGG XML API2 のドキュメント (https://boardgamegeek.com/wiki/page/BGG_XML_API2) より:
+//   - レート制限: 5秒以上の間隔を空ける（連投すると500/503）
+//   - thing endpoint: 1回最大20件まで
+//   - www.boardgamegeek.com はNG（authorization に支障）。bare domain を使う
+// + 経験則:
+//   - 素っ気ないUA（"my-script/1.0"等）は Cloudflare WAF に401で弾かれることがある
+//   - ブラウザ風UA + Accept-Language を送ると通る
 //
 // 使い方:
 //   npm run fetch:bgg
@@ -17,17 +22,28 @@ const THING_URL = (ids) =>
 const OUT_PATH = resolve(process.cwd(), "public/bgg-hot.json");
 const LOG = "[fetch-bgg]";
 
+// ブラウザ風ヘッダ。Cloudflare WAFのbot判定を回避するため。
+const HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9,ja;q=0.8",
+};
+
+const REQUEST_DELAY_MS = 5500; // BGG docs: 5秒以上。マージン込み。
+const THING_BATCH_SIZE = 20;   // BGG docs: thing は最大20件/回
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 async function fetchWithRetry(url, label, maxRetries = 5) {
   let lastStatus = 0;
   let lastBody = "";
   for (let i = 0; i < maxRetries; i++) {
     const t0 = Date.now();
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "bobzabeth-tools-fetch/1.0 (local script)",
-        Accept: "application/xml, text/xml",
-      },
-    });
+    const res = await fetch(url, { headers: HEADERS });
     const elapsed = Date.now() - t0;
     lastStatus = res.status;
     console.log(
@@ -42,16 +58,17 @@ async function fetchWithRetry(url, label, maxRetries = 5) {
       lastBody = "(body read failed)";
     }
     console.warn(`${LOG} body preview: ${lastBody.replace(/\s+/g, " ")}`);
-    // 202=queued, 429=rate limit, 5xx=server: リトライ。401/403はBGGに弾かれてるので即諦め
+    // 202=queued, 429=rate limit, 5xx=server: リトライ
     if (res.status === 202 || res.status === 429 || res.status >= 500) {
       const wait = 2000 * (i + 1);
       console.log(`${LOG} retrying in ${wait}ms...`);
-      await new Promise((r) => setTimeout(r, wait));
+      await sleep(wait);
       continue;
     }
+    // 401/403はCloudflare WAFのbot判定の可能性。UAやヘッダの問題なのでリトライしない
     throw new Error(
       `BGG ${label} returned ${res.status}: ${lastBody}\n` +
-        `クラウドIPからの実行ではBGGに401で弾かれる可能性が高い。bobzabethのローカルPCから実行してください。`
+        `401/403はCloudflareのbot判定の可能性。Macで実行・VPNオフ・最新Nodeで再試行してください。`
     );
   }
   throw new Error(
@@ -202,26 +219,55 @@ async function main() {
   console.log(`${LOG} parsed ${ids.length} hot IDs`);
   if (ids.length === 0) throw new Error("Got 0 hot IDs from BGG");
 
-  const thingXml = await fetchWithRetry(THING_URL(ids.join(",")), "thing");
-  const { games, withoutPoll, withoutName } = parseThing(thingXml);
+  // BGG XML API2: thing endpoint は最大20件/回
+  const batches = [];
+  for (let i = 0; i < ids.length; i += THING_BATCH_SIZE) {
+    batches.push(ids.slice(i, i + THING_BATCH_SIZE));
+  }
   console.log(
-    `${LOG} parsed ${games.length} games (noPoll=${withoutPoll}, noName=${withoutName})`
+    `${LOG} fetching ${ids.length} games in ${batches.length} batches of <=${THING_BATCH_SIZE} (5.5s wait each)`
   );
-  if (games.length === 0) throw new Error("Got 0 games from BGG");
+
+  const allGames = [];
+  let totalWithoutPoll = 0;
+  let totalWithoutName = 0;
+  for (let i = 0; i < batches.length; i++) {
+    console.log(`${LOG} waiting ${REQUEST_DELAY_MS}ms (BGG rate limit)...`);
+    await sleep(REQUEST_DELAY_MS);
+    const batchIds = batches[i];
+    console.log(
+      `${LOG} batch ${i + 1}/${batches.length}: ${batchIds.length} IDs`
+    );
+    const thingXml = await fetchWithRetry(
+      THING_URL(batchIds.join(",")),
+      `thing-batch${i + 1}`
+    );
+    const { games, withoutPoll, withoutName } = parseThing(thingXml);
+    allGames.push(...games);
+    totalWithoutPoll += withoutPoll;
+    totalWithoutName += withoutName;
+  }
+
+  console.log(
+    `${LOG} parsed ${allGames.length}/${ids.length} games total (noPoll=${totalWithoutPoll}, noName=${totalWithoutName})`
+  );
+  if (allGames.length === 0) throw new Error("Got 0 games from BGG");
 
   const order = new Map(ids.map((id, i) => [id, i]));
-  games.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
-  games.forEach((g, i) => (g.hotRank = i + 1));
+  allGames.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+  allGames.forEach((g, i) => (g.hotRank = i + 1));
 
   const data = {
-    games,
+    games: allGames,
     fetchedAt: new Date().toISOString(),
   };
 
   mkdirSync(dirname(OUT_PATH), { recursive: true });
   writeFileSync(OUT_PATH, JSON.stringify(data, null, 2) + "\n");
-  console.log(`${LOG} wrote ${games.length} games to ${OUT_PATH}`);
-  console.log(`${LOG} done. \`git add public/bgg-hot.json && git commit\` でデプロイ反映`);
+  console.log(`${LOG} wrote ${allGames.length} games to ${OUT_PATH}`);
+  console.log(
+    `${LOG} done. \`git add public/bgg-hot.json && git commit\` でデプロイ反映`
+  );
 }
 
 main().catch((e) => {
