@@ -1,20 +1,34 @@
 // BGG XML APIから Hot 50 + 詳細データを取得して public/bgg-hot.json に書き出すスクリプト。
 //
-// BGG XML API2 のドキュメント (https://boardgamegeek.com/wiki/page/BGG_XML_API2) より:
+// BGG XML API は 2025年から登録制 + Bearer token 必須化:
+//   https://boardgamegeek.com/wiki/page/Using_the_XML_API
+//   トークン取得手順は .env.example 参照。
+//
+// BGG XML API2 のレート/件数仕様:
 //   - レート制限: 5秒以上の間隔を空ける（連投すると500/503）
 //   - thing endpoint: 1回最大20件まで
-//   - www.boardgamegeek.com はNG（authorization に支障）。bare domain を使う
-// + 経験則:
-//   - 素っ気ないUA（"my-script/1.0"等）は Cloudflare WAF に401で弾かれることがある
-//   - ブラウザ風UA + Accept-Language を送ると通る
+//   - www.boardgamegeek.com はNG。bare domain を使う
 //
 // 使い方:
-//   npm run fetch:bgg
-//
-// 完了後、生成されたJSONをcommit&pushすればVercel本番に反映される。
+//   1. .env.example を .env.local にコピー
+//   2. BGG_API_TOKEN にトークンを貼り付け
+//   3. npm run fetch:bgg
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+
+// .env.local を手動ロード（Node 20.6+ の --env-file が無くても動くように）
+try {
+  const envFile = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
+  for (const line of envFile.split("\n")) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) {
+      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    }
+  }
+} catch {
+  // .env.localがない場合は環境変数からそのまま読む
+}
 
 const HOT_URL = "https://boardgamegeek.com/xmlapi2/hot?type=boardgame";
 const THING_URL = (ids) =>
@@ -22,8 +36,30 @@ const THING_URL = (ids) =>
 const OUT_PATH = resolve(process.cwd(), "public/bgg-hot.json");
 const LOG = "[fetch-bgg]";
 
-// ブラウザ風ヘッダ。Cloudflare WAFのbot判定を回避するため。
+const BGG_API_TOKEN = process.env.BGG_API_TOKEN;
+if (!BGG_API_TOKEN || BGG_API_TOKEN === "00000000-0000-0000-0000-000000000000") {
+  console.error(
+    `${LOG} BGG_API_TOKEN が未設定 or プレースホルダのままです。
+
+BGG XML API は 2025年から登録制 + Bearer token 必須化されました。
+セットアップ手順:
+
+  1. https://boardgamegeek.com/applications にアクセス
+  2. "Create Application" → "Non-commercial" を選択（個人ツールは無料）
+  3. アプリ情報入力して送信、承認待ち（数日〜1週間程度）
+  4. 承認後、"Tokens" からトークン生成
+  5. cp .env.example .env.local
+  6. .env.local の BGG_API_TOKEN に取得したトークンを貼り付け
+  7. npm run fetch:bgg を再実行
+`
+  );
+  process.exit(1);
+}
+
 const HEADERS = {
+  // Bearer token必須。docs: "Bearer" + 半角スペース + トークン（コロン無し）
+  Authorization: `Bearer ${BGG_API_TOKEN}`,
+  // ブラウザ風UA。Cloudflare WAFのbot判定回避用（保険）
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   Accept:
@@ -65,10 +101,10 @@ async function fetchWithRetry(url, label, maxRetries = 5) {
       await sleep(wait);
       continue;
     }
-    // 401/403はCloudflare WAFのbot判定の可能性。UAやヘッダの問題なのでリトライしない
+    // 401/403は認証/権限の問題なのでリトライしない
     throw new Error(
       `BGG ${label} returned ${res.status}: ${lastBody}\n` +
-        `401/403はCloudflareのbot判定の可能性。Macで実行・VPNオフ・最新Nodeで再試行してください。`
+        `401はBGG_API_TOKENが無効・期限切れ・未登録の可能性。https://boardgamegeek.com/applications でトークン確認を。`
     );
   }
   throw new Error(
