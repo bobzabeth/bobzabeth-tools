@@ -33,7 +33,6 @@ function errorToDebug(e: unknown): Record<string, unknown> {
       where: fe.where,
       status: fe.status,
       bodyPreview: fe.bodyPreview,
-      attempts: fe.attempts,
       stack: e.stack,
     };
   }
