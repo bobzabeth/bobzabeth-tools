@@ -27,19 +27,32 @@ function formatTimeRange(startIso: string, endIso: string): string {
   return `${fmt(start)}〜${fmt(end)}`;
 }
 
+const TARGET_START_HOURS_JST = [21, 23];
+
+function getJstHour(iso: string): number {
+  const hourStr = new Date(iso).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Tokyo",
+  });
+  return parseInt(hourStr, 10);
+}
+
 function buildMessage(results: Spla3Result[]): string {
   const today = new Date().toLocaleDateString("ja-JP", {
     timeZone: "Asia/Tokyo",
   });
 
-  const todays = results.filter((r) => {
+  const target = results.filter((r) => {
     const d = new Date(r.start_time).toLocaleDateString("ja-JP", {
       timeZone: "Asia/Tokyo",
     });
-    return d === today;
+    return d === today && TARGET_START_HOURS_JST.includes(getJstHour(r.start_time));
   });
 
-  const target = todays.length > 0 ? todays : results.slice(0, 6);
+  if (target.length === 0) {
+    return "【バンカラマッチ(オープン) 21:00〜01:00の予定】\n\n本日分の情報がまだ取得できませんでした。";
+  }
 
   const lines = target.map((r) => {
     const time = formatTimeRange(r.start_time, r.end_time);
@@ -48,7 +61,7 @@ function buildMessage(results: Spla3Result[]): string {
     return `${time} ${festMark}[${r.rule.name}]\n${stageNames}`;
   });
 
-  return `【バンカラマッチ(オープン) 本日の予定】\n\n${lines.join("\n\n")}`;
+  return `【バンカラマッチ(オープン) 21:00〜01:00の予定】\n\n${lines.join("\n\n")}`;
 }
 
 async function sendLineBroadcast(message: string) {
